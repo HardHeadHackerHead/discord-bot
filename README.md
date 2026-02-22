@@ -28,58 +28,136 @@ npm install @quadslab.io/discord-bot
 
 ### Prerequisites
 
-- Node.js 18+
-- MySQL 8.0+
-- A Discord bot token ([Discord Developer Portal](https://discord.com/developers/applications))
+- **Node.js 18+** — [Download](https://nodejs.org/)
+- **MySQL 8.0+** — [Download](https://dev.mysql.com/downloads/) or use Docker (see below)
+- **Discord Bot Token** — Create an application at the [Discord Developer Portal](https://discord.com/developers/applications)
 
-### Installation
+### Step 1: Create a Discord Application
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **New Application**, give it a name
+3. Go to **Bot** in the sidebar, click **Reset Token**, and copy your bot token
+4. On the same page, enable these **Privileged Gateway Intents**:
+   - Presence Intent
+   - Server Members Intent
+   - Message Content Intent
+5. Go to **OAuth2** in the sidebar, copy the **Client ID**
+6. Use this URL to invite the bot to your server (replace `YOUR_CLIENT_ID`):
+   ```
+   https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands
+   ```
+
+### Step 2: Set Up the Project
 
 ```bash
 # Clone the repository
 git clone https://github.com/HardHeadHackerHead/discord-bot.git
-cd QuadsLabBot
+cd discord-bot
 
 # Install dependencies
 npm install
 
-# Set up environment
+# Copy the example environment file
 cp .env.example .env
-# Edit .env with your bot token and database credentials
+```
 
+### Step 3: Configure Environment
+
+Edit `.env` and fill in the **required** values:
+
+```env
+# REQUIRED — paste your bot token and client ID from Step 1
+BOT_TOKEN=your_bot_token_here
+CLIENT_ID=your_client_id_here
+
+# REQUIRED — MySQL connection string
+# If using local MySQL:
+DATABASE_URL=mysql://root:yourpassword@localhost:3306/quadslab_bot
+# If using Docker MySQL (see below):
+DATABASE_URL=mysql://root:rootpassword@localhost:3307/quadslab_bot
+
+# RECOMMENDED — your Discord server ID for instant command updates
+# Right-click your server name in Discord (Developer Mode must be enabled) → Copy Server ID
+DEV_GUILD_ID=your_server_id_here
+```
+
+### Step 4: Set Up the Database
+
+**Option A: Local MySQL**
+
+Create the database in MySQL:
+```sql
+CREATE DATABASE quadslab_bot;
+```
+
+Then run:
+```bash
 # Generate Prisma client
 npm run db:generate
 
-# Push database schema
+# Create database tables
 npm run db:push
-
-# Start in development mode
-npm run dev
 ```
 
-### Docker
+**Option B: Docker MySQL (no local install needed)**
 
 ```bash
-# Start with Docker Compose (bot + MySQL)
+# Start just the database
+docker compose up db -d
+
+# Wait 10 seconds for MySQL to initialize, then run:
+npm run db:generate
+npm run db:push
+```
+
+This starts MySQL on port **3307** (to avoid conflicting with any local MySQL on 3306).
+
+### Step 5: Start the Bot
+
+```bash
+# Development mode (hot reload on file changes)
+npm run dev
+
+# Or build and run for production
+npm run build
+npm start
+```
+
+You should see output like:
+```
+[Bot] Logged in as YourBot#1234
+[ModuleLoader] Discovered 10 modules
+[ModuleManager] All modules loaded successfully
+```
+
+### Full Docker Setup (Bot + Database)
+
+To run everything in Docker:
+
+```bash
+# Start bot and MySQL together
 docker compose up -d
 
 # View logs
 docker compose logs -f bot
+
+# Stop everything
+docker compose down
 ```
 
-## Configuration
+## Configuration Reference
 
-Copy `.env.example` to `.env` and fill in the required values:
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `BOT_TOKEN` | Yes | — | Discord bot token |
+| `CLIENT_ID` | Yes | — | Discord application client ID |
+| `DATABASE_URL` | Yes | — | MySQL connection string (`mysql://user:pass@host:port/db`) |
+| `DEV_GUILD_ID` | No | — | Guild ID for instant slash command registration |
+| `NODE_ENV` | No | `development` | `development`, `production`, or `test` |
+| `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, or `error` |
+| `BOT_OWNER_IDS` | No | — | Comma-separated Discord user IDs with owner-level access |
 
-| Variable | Required | Description |
-|---|---|---|
-| `BOT_TOKEN` | Yes | Discord bot token |
-| `CLIENT_ID` | Yes | Discord application client ID |
-| `DATABASE_URL` | Yes | MySQL connection string (`mysql://user:pass@host:3306/dbname`) |
-| `DEV_GUILD_ID` | No | Guild ID for instant slash command updates during development |
-| `NODE_ENV` | No | `development` or `production` (default: `development`) |
-| `LOG_LEVEL` | No | `debug`, `info`, `warn`, or `error` (default: `debug`) |
-
-See `.env.example` for the full list of configuration options including website integration and ngrok tunnel settings.
+See `.env.example` for additional optional settings (website integration, ngrok, Docker).
 
 ## Included Modules
 
