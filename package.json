@@ -15,7 +15,7 @@
     "db:studio": "prisma studio",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "mcp:start": "node dist/mcp-server.js",
+    "mcp:start": "node dist/mcp/src/mcp-server.js",
     "docker:switch": "powershell -ExecutionPolicy Bypass -File ./scripts/switch-to-docker.ps1",
     "local:switch": "powershell -ExecutionPolicy Bypass -File ./scripts/switch-to-local.ps1",
     "docker:sync-to": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-db-to-docker.ps1",

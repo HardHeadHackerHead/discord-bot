@@ -53,10 +53,6 @@ data/
 .mcp.json
 CLAUDE.md
 
-# MCP server (private integration)
-src/mcp-server.ts
-src/mcp/
-
 # ===========================
 # Modules (opt-in for release)
 # ===========================
