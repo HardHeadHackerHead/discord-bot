@@ -1,0 +1,267 @@
+{
+  "$schema": "./server-guide.schema.json",
+  "metadata": {
+    "name": "Quad's Lab Server Guide",
+    "description": "Embeds for the #server-guide channel",
+    "version": "1.3.0",
+    "lastUpdated": "2026-01-13"
+  },
+  "channelId": "1460713578066608189",
+  "embeds": [
+    {
+      "id": "founder-message",
+      "order": 2,
+      "title": "A Message From The Founder",
+      "description": "Hey, I'm **<@1143672889757925438>** — welcome to the lab.\n\nI built this space for people who are serious about turning ideas into reality. Whether you're just getting started or you've been building for years, this is a place to experiment, connect, and ship.\n\nNo fluff. No gatekeeping. Just builders helping builders.\n\nIf you've got questions, ideas, or just want to say what's up — I'm around. Drop into the chats, join a voice session, and make this place your own.\n\nLet's build something that matters.",
+      "color": "#e91e63",
+      "thumbnail": "https://cdn.discordapp.com/avatars/1143672889757925438/578ed85c1fe2544c87209511d4ba8015.webp",
+      "footer": {
+        "text": "— Quad H, Founder"
+      }
+    },
+    {
+      "id": "welcome",
+      "order": 1,
+      "title": "Welcome to Quad's Lab",
+      "description": "**Ideas mutate into systems. What survives gets shipped.**\n\nThis is a community for builders, founders, and experimenters who are serious about turning ideas into reality. Whether you're launching your first product, scaling a business, or exploring new systems — you're in the right place.",
+      "color": "#e91e63",
+      "thumbnail": "https://cdn.discordapp.com/icons/1457460631782428768/ab8716a1894c1ae116ff7ecc3c8dc0ad.webp"
+    },
+    {
+      "id": "rules",
+      "order": 3,
+      "title": "Server Rules",
+      "description": "Before you dive in, take a moment to read our community guidelines in <#1457461136638345401>.\n\n**The short version:**\n• Be respectful and constructive\n• No spam, self-promo without value, or drama\n• Help others when you can\n• Keep it professional\n\nWe're all here to build — let's keep it that way.",
+      "color": "#ed4245"
+    },
+    {
+      "id": "getting-started",
+      "order": 4,
+      "title": "Getting Started",
+      "description": "Ready to dive in? Here's how to make the most of Quad's Lab:",
+      "color": "#f39c12",
+      "fields": [
+        {
+          "name": "1. Grab Your Roles",
+          "value": "Visit <#1457461529392971849> and select the tags that match your interests and business focus",
+          "inline": false
+        },
+        {
+          "name": "2. Introduce Yourself",
+          "value": "Drop into <#1457460632843583624> and let us know what you're working on",
+          "inline": false
+        },
+        {
+          "name": "3. Share Your Work",
+          "value": "Building something? Post it in <#1457462630535921766> for feedback and support",
+          "inline": false
+        },
+        {
+          "name": "4. Join Voice Chats",
+          "value": "Hop into <#1457460632843583625> or <#1457463069822156951> to connect with other builders in real-time",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "Welcome to the lab. Now get building."
+      }
+    },
+    {
+      "id": "channel-guide",
+      "order": 5,
+      "title": "Channel Guide",
+      "description": "Here's what each area of the server is for:",
+      "color": "#3498db",
+      "fields": [
+        {
+          "name": "Read Only",
+          "value": "<#1457461136638345401> - Community guidelines\n<#1457461304305520888> - Important updates\n<#1457461233258201394> - Welcome new members\n<#1457461529392971849> - Pick your interest roles",
+          "inline": false
+        },
+        {
+          "name": "Chat Lab",
+          "value": "<#1457460632843583624> - Main hangout spot\n<#1457462630535921766> - Share what you're building\n<#1457462735661961507> - Bounce ideas off others\n<#1457611185305288725> - Discuss tools & tech",
+          "inline": false
+        },
+        {
+          "name": "Public Labs",
+          "value": "<#1457460632843583625> - Casual voice chat\n<#1457463069822156951> - Open voice sessions\n<#1460308775658586223> - Live content creation",
+          "inline": false
+        },
+        {
+          "name": "Community Labs",
+          "value": "Personal voice channels for members to host their own sessions and collaborate",
+          "inline": false
+        }
+      ]
+    },
+    {
+      "id": "community-labs",
+      "order": 6,
+      "title": "Community Labs",
+      "description": "Want your own space to hang out, collaborate, or host sessions?",
+      "color": "#1abc9c",
+      "fields": [
+        {
+          "name": "How It Works",
+          "value": "1. Join <#1460016666472874110>\n2. A personal voice channel is automatically created for you\n3. You become the host with control over your lab\n4. Invite others to join and collaborate",
+          "inline": false
+        },
+        {
+          "name": "Your Lab, Your Rules",
+          "value": "As the host, you can manage who's in your lab and what happens there. It's your space to experiment, brainstorm, or just chill with others.",
+          "inline": false
+        },
+        {
+          "name": "Temporary by Design",
+          "value": "Community labs are created on-demand and clean up automatically when everyone leaves. No clutter, just action.",
+          "inline": false
+        }
+      ]
+    },
+    {
+      "id": "server-ideas",
+      "order": 7,
+      "title": "Shape The Lab",
+      "description": "This community is built by its members. Got an idea to make the server better? We want to hear it.\n\nHead to <#1458550489162715308> to share your suggestions — whether it's a new channel, a feature request, an event idea, or anything else that could improve the experience here.",
+      "color": "#ff9800",
+      "fields": [
+        {
+          "name": "How It Works",
+          "value": "1. Post your idea in <#1458550489162715308>\n2. The community can discuss and upvote\n3. Good ideas get implemented",
+          "inline": false
+        },
+        {
+          "name": "What We're Looking For",
+          "value": "• New channel suggestions\n• Bot feature requests\n• Event or activity ideas\n• Ways to improve the community\n• Anything that helps builders build",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "Your idea could shape how this place runs."
+      }
+    },
+    {
+      "id": "bot-features",
+      "order": 8,
+      "title": "Bot Features",
+      "description": "The lab comes equipped with some tools to make things more interesting:",
+      "color": "#5865f2",
+      "fields": [
+        {
+          "name": "Points System",
+          "value": "Earn points by chatting, spending time in voice, and being active. Use `/points` to check your balance.",
+          "inline": false
+        },
+        {
+          "name": "Leaderboards",
+          "value": "See who's most active with `/leaderboard`. Track messages, voice time, and points.",
+          "inline": false
+        },
+        {
+          "name": "Gambling",
+          "value": "Feeling lucky? Use `/gamble` to play slots, blackjack, coinflip, and roulette with your points.",
+          "inline": false
+        },
+        {
+          "name": "Polls",
+          "value": "Create polls to get community input with `/poll`.",
+          "inline": false
+        }
+      ]
+    },
+    {
+      "id": "progression-roles",
+      "order": 9,
+      "title": "Progression Roles",
+      "description": "Track your journey as a builder! Head to <#1457461529392971849> to pick the level that best represents where you're at.\n\n**You can only hold one progression role at a time.** As you grow and level up, come back and upgrade your role whenever you're ready.",
+      "color": "#9b59b6",
+      "fields": [
+        {
+          "name": "🪶 Uninitiated",
+          "value": "Just joined - welcome to the lab!",
+          "inline": true
+        },
+        {
+          "name": "🧪 Experimenter",
+          "value": "Starting to engage and explore",
+          "inline": true
+        },
+        {
+          "name": "⚙️ Builder",
+          "value": "Actively contributing and building",
+          "inline": true
+        },
+        {
+          "name": "🚀 Launcher",
+          "value": "Shipping projects and helping others",
+          "inline": true
+        },
+        {
+          "name": "🧠 Operator",
+          "value": "Running systems with consistency",
+          "inline": true
+        },
+        {
+          "name": "📈 Scaler",
+          "value": "Growing and scaling operations",
+          "inline": true
+        },
+        {
+          "name": "🧭 Autonomous",
+          "value": "Self-directed and leading initiatives",
+          "inline": true
+        }
+      ]
+    },
+    {
+      "id": "interest-roles",
+      "order": 10,
+      "title": "Interest Roles",
+      "description": "Head to <#1457461529392971849> to pick tags that match your focus areas:",
+      "color": "#2ecc71",
+      "fields": [
+        {
+          "name": "Business Types",
+          "value": "Solo Founder • Agency Owner • Product Builder • Service Business • Consultant",
+          "inline": false
+        },
+        {
+          "name": "Focus Areas",
+          "value": "Systems Builder • Website Builder • Product Launcher • SaaS Curious • E-Commerce • Digital Products • Brand Builder",
+          "inline": false
+        },
+        {
+          "name": "Skills & Interests",
+          "value": "Marketing • Growth Focused • Stock Market • Long Term Investor • Cash Flow Focused • Sales • Lead Generation • Automation • Process Design • Operations • Finance Minded",
+          "inline": false
+        }
+      ]
+    },
+    {
+      "id": "stay-connected",
+      "order": 11,
+      "title": "Stay Connected",
+      "description": "Follow the lab beyond Discord:",
+      "color": "#607d8b",
+      "fields": [
+        {
+          "name": "YouTube",
+          "value": "[@HardHeadHackerHead](https://www.youtube.com/@HardHeadHackerHead)",
+          "inline": true
+        },
+        {
+          "name": "TikTok",
+          "value": "[@hardheadhackerhead](https://www.tiktok.com/@hardheadhackerhead)",
+          "inline": true
+        },
+        {
+          "name": "Website",
+          "value": "[quadslab.io](https://quadslab.io/)",
+          "inline": true
+        }
+      ]
+    }
+  ],
+  "imageUploadChannelId": "1457901795946004642"
+}

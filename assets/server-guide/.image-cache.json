@@ -1,0 +1,65 @@
+{
+  "rules": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\rules.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460735031734698064/rules.png?ex=6967ff02&is=6966ad82&hm=b4168da2a6d126171413e19e9bc07bd6354f2e24a072fb8632ebe8d2ca48717b&",
+    "uploadedAt": "2026-01-13T20:39:30.996Z",
+    "messageId": "1460735031986225234",
+    "channelId": "1457901795946004642"
+  },
+  "getting-started": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\getting-started.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460738254860189959/getting-started.png?ex=69680203&is=6966b083&hm=863c9f614929cbc55c65ad2259296f3b05bae0a60d3dc0eddf9f0a3a2911c452&",
+    "uploadedAt": "2026-01-13T20:52:18.125Z",
+    "messageId": "1460738255153795084",
+    "channelId": "1457901795946004642"
+  },
+  "channel-guide": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\channel-guide.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460738264016228454/channel-guide.png?ex=69680205&is=6966b085&hm=9c578be115b76cc6c3095f5c329da87e59b1db91765558b1a109d9f9f8b1231a&",
+    "uploadedAt": "2026-01-13T20:52:20.478Z",
+    "messageId": "1460738264678793420",
+    "channelId": "1457901795946004642"
+  },
+  "community-labs": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\community-labs.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460738276536221716/community-labs.png?ex=69680208&is=6966b088&hm=3edc104a8bac8824b26c9fe218040fd002b1c20f2ef4ce7f9f3edbdac794c016&",
+    "uploadedAt": "2026-01-13T20:52:23.455Z",
+    "messageId": "1460738276884480197",
+    "channelId": "1457901795946004642"
+  },
+  "server-ideas": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\server-ideas.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460738286795624448/server-ideas.png?ex=6968020a&is=6966b08a&hm=de36d3b14cf68296b5228d2fdfab01ea18e954363f5ddb1ccb495767233e4d82&",
+    "uploadedAt": "2026-01-13T20:52:25.862Z",
+    "messageId": "1460738287177039872",
+    "channelId": "1457901795946004642"
+  },
+  "bot-features": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\bot-features.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460738296924602619/bot-features.png?ex=6968020d&is=6966b08d&hm=63b92c5f595bd5b942014a1a89828a0f3697cedfcbd64f939664b1c7a560c349&",
+    "uploadedAt": "2026-01-13T20:52:28.258Z",
+    "messageId": "1460738297054756887",
+    "channelId": "1457901795946004642"
+  },
+  "progression-roles": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\progression-roles.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460738306747924703/progression-roles.png?ex=6968020f&is=6966b08f&hm=a721897a9e2bc0218550139e8f0ba05b46f8199034797e59a67528000669c710&",
+    "uploadedAt": "2026-01-13T20:52:30.482Z",
+    "messageId": "1460738306869301355",
+    "channelId": "1457901795946004642"
+  },
+  "interest-roles": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\interest-roles.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460739134401282161/interest-roles.png?ex=696802d4&is=6966b154&hm=0052e0bd6dac9a1f9d8d29480fb983e8c9f3c404686b586deb909694cf65027d&",
+    "uploadedAt": "2026-01-13T20:55:50.254Z",
+    "messageId": "1460739134498013258",
+    "channelId": "1457901795946004642"
+  },
+  "stay-connected": {
+    "localPath": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\assets\\server-guide\\stay-connected.png",
+    "discordUrl": "https://cdn.discordapp.com/attachments/1457901795946004642/1460739153795748102/stay-connected.png?ex=696802d9&is=6966b159&hm=edd7bf9e1f856d7414da1c9eea47c129178ac6dacccd918da5c3d6aa9e78ee07&",
+    "uploadedAt": "2026-01-13T20:55:52.504Z",
+    "messageId": "1460739153774907464",
+    "channelId": "1457901795946004642"
+  }
+}

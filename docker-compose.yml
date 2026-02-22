@@ -1,0 +1,55 @@
+services:
+  bot:
+    build: .
+    container_name: quadslab-bot
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=mysql://quadslab:${MYSQL_PASSWORD:-botpassword}@db:3306/quadslab_bot
+      # Website integration settings
+      - WEBSITE_URL=${WEBSITE_URL}
+      - WEBSITE_WEBHOOK_SECRET=${WEBSITE_WEBHOOK_SECRET}
+      # Ngrok settings (passed from .env)
+      - NGROK_ENABLED=${NGROK_ENABLED:-false}
+      - NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN:-}
+      - NGROK_REGION=${NGROK_REGION:-us}
+      # Use DOCKER_WEBHOOK_PORT if set, otherwise fall back to WEBHOOK_SERVER_PORT
+      - WEBHOOK_SERVER_PORT=${DOCKER_WEBHOOK_PORT:-${WEBHOOK_SERVER_PORT:-3001}}
+    ports:
+      # Expose webhook server (use DOCKER_WEBHOOK_PORT to avoid conflict with local dev)
+      - "${DOCKER_WEBHOOK_PORT:-${WEBHOOK_SERVER_PORT:-3001}}:${DOCKER_WEBHOOK_PORT:-${WEBHOOK_SERVER_PORT:-3001}}"
+    networks:
+      - bot-network
+
+  db:
+    image: mysql:8.0
+    container_name: quadslab-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=quadslab_bot
+      - MYSQL_USER=quadslab
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-botpassword}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3307:3306"  # Using 3307 externally since 3306 is likely in use
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

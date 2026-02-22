@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+nul
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Prisma
+prisma/migrations/**/migration_lock.toml
+
+# TypeScript
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Database backups
+*.sql
+*.sql.gz
+SQL_BACKUPS/
+
+# Recordings and data
+recordings/
+data/
+
+# QuadCode local files
+.claude/
+
+# ===========================
+# Modules (opt-in for release)
+# ===========================
+# All modules are ignored by default.
+# To release a module, remove its line below.
+
+src/modules/admin/
+src/modules/dynamic-lab/
+src/modules/gambling/
+src/modules/help/
+src/modules/ideas/
+src/modules/inactive-users/
+src/modules/leaderboard/
+src/modules/meeting/
+src/modules/message-editor/
+src/modules/message-tracking/
+src/modules/points/
+src/modules/polls/
+src/modules/role-management/
+src/modules/server-guide/
+src/modules/server-stats/
+src/modules/social-feeds/
+src/modules/test-recording/
+src/modules/user-tracking/
+src/modules/voice-ai/
+src/modules/voice-join/
+src/modules/voice-tracking/
+src/modules/website-integration/
+src/modules/welcome/

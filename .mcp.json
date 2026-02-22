@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "discord-server": {
+      "command": "node",
+      "args": ["C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot\\dist\\mcp-server.js"],
+      "cwd": "C:\\Users\\DHack\\Desktop\\Node Projects\\QuadsLabBot"
+    }
+  }
+}

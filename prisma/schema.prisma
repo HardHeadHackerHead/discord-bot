@@ -1,0 +1,175 @@
+// Prisma Schema for QuadsLabBot
+// This file contains CORE tables only
+// Module-specific tables are created via runtime SQL migrations
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE USER & GUILD TABLES
+// ============================================
+
+/// Discord users tracked by the bot
+model User {
+  id            String   @id @db.VarChar(20) // Discord user ID (snowflake)
+  username      String   @db.VarChar(32)
+  discriminator String?  @db.VarChar(4) // Legacy discriminator (deprecated by Discord)
+  globalName    String?  @db.VarChar(32) // New display name system
+  avatarHash    String?  @db.VarChar(64)
+  isBot         Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  firstSeenAt   DateTime @default(now())
+
+  // Relations
+  guildMembers GuildMember[]
+
+  @@map("users")
+}
+
+/// Discord guilds (servers) the bot is in
+model Guild {
+  id       String    @id @db.VarChar(20) // Discord guild ID (snowflake)
+  name     String    @db.VarChar(100)
+  iconHash String?   @db.VarChar(64)
+  ownerId  String    @db.VarChar(20)
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+  isActive Boolean   @default(true)
+
+  // Relations
+  members      GuildMember[]
+  settings     GuildSettings[]
+  guildModules GuildModule[]
+
+  @@map("guilds")
+}
+
+/// Guild membership - tracks users in each guild
+model GuildMember {
+  id       String    @id @default(cuid())
+  guildId  String    @db.VarChar(20)
+  userId   String    @db.VarChar(20)
+  nickname String?   @db.VarChar(32)
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+  isActive Boolean   @default(true)
+
+  // Relations
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId])
+  @@index([userId])
+  @@map("guild_members")
+}
+
+// ============================================
+// MODULE MANAGEMENT TABLES
+// ============================================
+
+/// Registered modules and their global state
+model Module {
+  id          String    @id @db.VarChar(64) // Module identifier (e.g., "user-tracking")
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  version     String    @db.VarChar(20)
+  isCore      Boolean   @default(false) // Core modules cannot be disabled
+  isPublic    Boolean   @default(true) // Whether users can see this module is loaded
+  enabled     Boolean   @default(true) // Global enable/disable
+  loadedAt    DateTime?
+  lastError   String?   @db.Text
+  settings    Json? // Global module settings
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  dependencies ModuleDependency[] @relation("DependentModule")
+  dependents   ModuleDependency[] @relation("RequiredModule")
+  guildModules GuildModule[]
+  migrations   ModuleMigration[]
+
+  @@map("modules")
+}
+
+/// Module dependency relationships
+model ModuleDependency {
+  id          String  @id @default(cuid())
+  moduleId    String  @db.VarChar(64) // The module that has dependencies
+  dependsOnId String  @db.VarChar(64) // The module it depends on
+  isOptional  Boolean @default(false)
+
+  // Relations
+  module    Module @relation("DependentModule", fields: [moduleId], references: [id], onDelete: Cascade)
+  dependsOn Module @relation("RequiredModule", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, dependsOnId])
+  @@map("module_dependencies")
+}
+
+/// Per-guild module enable/disable state
+model GuildModule {
+  id        String   @id @default(cuid())
+  guildId   String   @db.VarChar(20)
+  moduleId  String   @db.VarChar(64)
+  enabled   Boolean  @default(true)
+  settings  Json? // Guild-specific module settings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  guild  Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, moduleId])
+  @@index([guildId])
+  @@index([moduleId])
+  @@map("guild_modules")
+}
+
+/// Generic guild settings storage (key-value)
+model GuildSettings {
+  id        String   @id @default(cuid())
+  guildId   String   @db.VarChar(20)
+  key       String   @db.VarChar(100)
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, key])
+  @@index([guildId])
+  @@map("guild_settings")
+}
+
+// ============================================
+// MODULE MIGRATION TRACKING
+// ============================================
+
+/// Tracks which SQL migrations have been run for each module
+model ModuleMigration {
+  id          String   @id @default(cuid())
+  moduleId    String   @db.VarChar(64)
+  filename    String   @db.VarChar(255) // e.g., "001_create_tables.sql"
+  executedAt  DateTime @default(now())
+  checksum    String   @db.VarChar(64) // MD5 hash of migration content
+  success     Boolean  @default(true)
+  errorMessage String? @db.Text
+
+  // Relations
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, filename])
+  @@index([moduleId])
+  @@map("module_migrations")
+}

@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+
+# Build output (we rebuild in Docker)
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files (use docker-compose env vars instead)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (no need to copy into build context)
+Dockerfile
+docker-compose*.yml
+.dockerignore
