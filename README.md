@@ -26,7 +26,7 @@ A modular Discord bot framework built with TypeScript and Discord.js. Features a
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/QuadsLabBot.git
+git clone https://github.com/HardHeadHackerHead/discord-bot.git
 cd QuadsLabBot
 
 # Install dependencies
