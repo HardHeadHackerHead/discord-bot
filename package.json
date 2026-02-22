@@ -66,6 +66,22 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/index.*",
+    "dist/bot.*",
+    "dist/config",
+    "dist/core",
+    "dist/shared",
+    "dist/types",
+    "dist/modules",
+    "prisma",
+    "docs",
+    "LICENSE",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18.0.0"
   }
