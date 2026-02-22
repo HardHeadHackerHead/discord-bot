@@ -48,35 +48,48 @@ SQL_BACKUPS/
 recordings/
 data/
 
-# QuadCode local files
+# Claude / QuadCode local files
 .claude/
+.mcp.json
+CLAUDE.md
+
+# MCP server (private integration)
+src/mcp-server.ts
+src/mcp/
 
 # ===========================
 # Modules (opt-in for release)
 # ===========================
 # All modules are ignored by default.
-# To release a module, remove its line below.
+# To release a module, uncomment its line below.
 
-src/modules/admin/
-src/modules/dynamic-lab/
-src/modules/gambling/
-src/modules/help/
-src/modules/ideas/
-src/modules/inactive-users/
-src/modules/leaderboard/
-src/modules/meeting/
-src/modules/message-editor/
-src/modules/message-tracking/
-src/modules/points/
-src/modules/polls/
-src/modules/role-management/
-src/modules/server-guide/
-src/modules/server-stats/
-src/modules/social-feeds/
-src/modules/test-recording/
-src/modules/user-tracking/
-src/modules/voice-ai/
-src/modules/voice-join/
-src/modules/voice-tracking/
-src/modules/website-integration/
-src/modules/welcome/
+src/modules/*/
+
+# --- Tier 1: Released ---
+!src/modules/admin/
+!src/modules/help/
+!src/modules/user-tracking/
+!src/modules/message-tracking/
+!src/modules/voice-tracking/
+!src/modules/points/
+!src/modules/leaderboard/
+!src/modules/polls/
+!src/modules/role-management/
+!src/modules/message-editor/
+
+# --- Tier 2: Consider later ---
+# !src/modules/welcome/
+# !src/modules/server-stats/
+# !src/modules/social-feeds/
+# !src/modules/dynamic-lab/
+# !src/modules/inactive-users/
+
+# --- Tier 3: Private ---
+# !src/modules/gambling/
+# !src/modules/voice-ai/
+# !src/modules/meeting/
+# !src/modules/website-integration/
+# !src/modules/server-guide/
+# !src/modules/ideas/
+# !src/modules/test-recording/
+# !src/modules/voice-join/

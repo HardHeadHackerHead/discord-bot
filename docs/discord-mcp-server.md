@@ -1,6 +1,6 @@
 # Discord MCP Server
 
-A Model Context Protocol (MCP) server that provides full Discord server administration through Claude Code. Built with Discord.js v14 and the MCP SDK, it exposes 73 tools covering every aspect of server management — from sending messages and managing roles to configuring auto-moderation rules and scheduled events.
+A Model Context Protocol (MCP) server that provides full Discord server administration through Claude Code. Built with Discord.js v14 and the MCP SDK, it exposes 99 tools covering every aspect of server management — from sending messages and managing roles to configuring auto-moderation rules, forums, stages, and scheduled events.
 
 ## Setup
 
@@ -62,17 +62,19 @@ src/mcp/
     index.ts             # Tool registry — routes tool calls to category handlers
     utils.ts             # Fuzzy matching — smart name resolution for channels, roles, members
     guild.ts             # Server info tools (2)
-    roles.ts             # Role management tools (8)
-    channels.ts          # Channel management tools (12)
-    members.ts           # Member management tools (9)
-    messages.ts          # Messaging tools (10)
+    roles.ts             # Role management tools (9)
+    channels.ts          # Channel management tools (16)
+    members.ts           # Member management tools (12)
+    messages.ts          # Messaging tools (13)
     reactions.ts         # Reaction tools (1)
-    server.ts            # Server admin tools (6)
+    server.ts            # Server admin tools (13)
     threads.ts           # Thread management tools (7)
     emojis.ts            # Emoji & sticker tools (7)
     webhooks.ts          # Webhook tools (4)
     events.ts            # Scheduled event tools (4)
     automod.ts           # Auto-moderation tools (4)
+    forums.ts            # Forum channel tools (5)
+    stage.ts             # Stage instance tools (3)
 ```
 
 ### Key Design Features
@@ -119,7 +121,7 @@ Three read-only resources are available:
 | `list_guilds` | List all servers the bot is a member of |
 | `get_guild_info` | Detailed server info — member count, channels, roles, features, boost tier |
 
-### Roles (8 tools)
+### Roles (9 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -129,10 +131,11 @@ Three read-only resources are available:
 | `modify_role` | Change a role's name, color, hoist, mentionable, or position |
 | `get_role_permissions` | View all permissions granted to a role |
 | `modify_role_permissions` | Grant or revoke specific permissions on a role |
+| `set_role_icon` | Set a Unicode emoji or image as the role icon (requires boost level 2+) |
 | `assign_role` | Add a role to a member |
 | `remove_role` | Remove a role from a member |
 
-### Channels (12 tools)
+### Channels (16 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -140,6 +143,7 @@ Three read-only resources are available:
 | `create_text_channel` | Create a new text channel, optionally in a category |
 | `create_voice_channel` | Create a new voice channel with bitrate and user limit |
 | `create_category` | Create a new channel category |
+| `create_forum_channel` | Create a new forum channel with optional tags and default settings |
 | `delete_channel` | Delete any channel type |
 | `modify_channel` | Change name, topic, category, NSFW, position, user limit |
 | `set_channel_permissions` | Set permission overwrites for a role or user on a channel |
@@ -148,8 +152,11 @@ Three read-only resources are available:
 | `unlock_channel` | Remove SendMessages deny for @everyone |
 | `set_slowmode` | Set rate limit (0-21600 seconds) on a text channel |
 | `clone_channel` | Duplicate a channel with all permissions and settings |
+| `reorder_channels` | Reorder channels by specifying new positions |
+| `set_voice_region` | Set the RTC region for a voice channel |
+| `follow_announcement_channel` | Follow an announcement channel to cross-post into another channel |
 
-### Members (9 tools)
+### Members (12 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -159,19 +166,25 @@ Three read-only resources are available:
 | `ban_member` | Ban a member with optional message deletion (0-7 days) |
 | `unban_member` | Remove a ban by username or user ID |
 | `timeout_member` | Apply a timeout (10m, 1h, 1d, 1w) or remove one |
+| `prune_members` | Remove inactive members (supports dry run and role filtering) |
+| `bulk_assign_role` | Assign a role to multiple members at once |
+| `bulk_remove_role` | Remove a role from multiple members at once |
 | `set_nickname` | Change a member's nickname or reset it |
 | `move_to_voice` | Move a member to a different voice channel |
 | `disconnect_from_voice` | Disconnect a member from their voice channel |
 
-### Messages (10 tools)
+### Messages (13 tools)
 
 | Tool | Description |
 |------|-------------|
 | `get_messages` | Fetch recent messages from a text or voice channel |
+| `get_message` | Fetch a single message by ID with full details |
 | `send_message` | Send a text message, optionally as a reply |
 | `send_embed` | Send a rich embed with title, fields, images, and footer |
+| `edit_message` | Edit a message previously sent by the bot |
 | `delete_message` | Delete a single message by ID |
 | `bulk_delete_messages` | Delete 2-100 messages at once (< 14 days old), optionally filtered by user |
+| `crosspost_message` | Publish a message in an announcement channel to all following channels |
 | `pin_message` | Pin a message |
 | `unpin_message` | Unpin a message |
 | `list_pinned_messages` | Get all pinned messages in a channel |
@@ -184,7 +197,7 @@ Three read-only resources are available:
 |------|-------------|
 | `get_reactions` | Get all reactions on a message with full reactor details — account creation date, server join date, roles, avatar, boost status. Optionally filter by emoji. |
 
-### Server Admin (6 tools)
+### Server Admin (13 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -194,6 +207,13 @@ Three read-only resources are available:
 | `delete_invite` | Revoke an invite by code |
 | `get_audit_log` | Fetch audit log entries, optionally filtered by action type or user |
 | `list_bans` | View all banned users with reasons |
+| `get_welcome_screen` | Get the server welcome screen configuration |
+| `set_welcome_screen` | Configure the welcome screen with description and featured channels |
+| `get_widget` | Get the server widget settings |
+| `set_widget` | Configure the server widget (enable/disable, set channel) |
+| `get_vanity_url` | Get the server vanity URL (requires VANITY_URL feature) |
+| `list_integrations` | List all integrations (bots, apps) connected to the server |
+| `delete_integration` | Remove an integration from the server |
 
 ### Threads (7 tools)
 
@@ -206,6 +226,16 @@ Three read-only resources are available:
 | `delete_thread` | Delete a thread |
 | `lock_thread` | Lock a thread (prevent new messages without archiving) |
 | `unlock_thread` | Unlock a thread |
+
+### Forums (5 tools)
+
+| Tool | Description |
+|------|-------------|
+| `create_forum_post` | Create a new post (thread) in a forum channel with optional tags |
+| `list_forum_tags` | List all available tags on a forum channel |
+| `create_forum_tag` | Add a new tag to a forum channel (max 20 per channel) |
+| `edit_forum_tag` | Edit an existing forum tag's name, emoji, or moderated status |
+| `delete_forum_tag` | Remove a tag from a forum channel |
 
 ### Emojis & Stickers (7 tools)
 
@@ -236,6 +266,14 @@ Three read-only resources are available:
 | `create_event` | Create a voice, stage, or external event with start/end times |
 | `edit_event` | Modify an event's name, description, times, or status |
 | `delete_event` | Delete a scheduled event |
+
+### Stage Instances (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_stage_instances` | List all active stage instances with topic and channel info |
+| `start_stage` | Start a new stage instance on a stage channel with a topic |
+| `end_stage` | End an active stage instance |
 
 ### Auto-Moderation (4 tools)
 
