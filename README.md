@@ -1,6 +1,16 @@
-# QuadsLabBot
+# @quadslab.io/discord-bot
+
+[![npm version](https://img.shields.io/npm/v/@quadslab.io/discord-bot)](https://www.npmjs.com/package/@quadslab.io/discord-bot)
+[![CI](https://github.com/HardHeadHackerHead/discord-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/HardHeadHackerHead/discord-bot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A modular Discord bot framework built with TypeScript and Discord.js. Features a plugin architecture with dynamic module loading, runtime database migrations, AI integration, and an inter-module event bus. Build new features as self-contained modules without touching the core.
+
+## Install
+
+```bash
+npm install @quadslab.io/discord-bot
+```
 
 ## Features
 
