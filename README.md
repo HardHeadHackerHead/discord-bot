@@ -6,6 +6,10 @@
 
 A modular Discord bot framework built with TypeScript and Discord.js. Features a plugin architecture with dynamic module loading, runtime database migrations, AI integration, and an inter-module event bus. Build new features as self-contained modules without touching the core.
 
+<p align="center">
+  <img src="assets/demo.svg" alt="npx @quadslab.io/discord-mcp init — interactive setup wizard" width="800">
+</p>
+
 ## Install
 
 ```bash

@@ -1,0 +1,470 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" width="800" height="560">
+  <defs>
+    <style>
+      /* ============================================================
+         ANIMATED TERMINAL DEMO — npx @quadslab.io/discord-mcp init
+         18s loop, pure CSS keyframes, GitHub-compatible (no JS)
+
+         Timing (% of 18s):
+           0.0s =  0.0%  Command typewriter
+           1.5s =  8.3%  Command done
+           1.8s = 10.0%  Logo fades in
+           2.8s = 15.6%  Welcome text
+           3.2s = 17.8%  Tool count
+           3.8s = 21.1%  Bot question
+           4.4s = 24.4%  Answer "y"
+           4.8s = 26.7%  Token prompt
+           5.3s = 29.4%  Masked token
+           5.8s = 32.2%  Spinner starts
+           7.8s = 43.3%  Connected (spinner hides)
+           8.2s = 45.6%  Servers found
+           8.8s = 48.9%  Select server header
+           9.1s = 50.6%  Server 1
+           9.3s = 51.7%  Server 2
+           9.8s = 54.4%  Selection confirmed
+          10.4s = 57.8%  Client header
+          10.8s = 60.0%  Client 1
+          11.1s = 61.7%  Client 2
+          11.4s = 63.3%  Client 3
+          12.2s = 67.8%  Setup complete
+          12.8s = 71.1%  Summary line 1
+          13.1s = 72.8%  Summary line 2
+          13.4s = 74.4%  Summary line 3
+          15.0s = 83.3%  Begin fade out
+          16.0s = 88.9%  Hidden
+          18.0s = 100%   Loop
+         ============================================================ */
+
+      .mono { font-family: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace; }
+      .text-default  { fill: #abb2bf; }
+      .text-bold     { fill: #e5e5e5; }
+      .text-cyan     { fill: #56b6c2; }
+      .text-cyan-br  { fill: #6dd6e2; }
+      .text-magenta  { fill: #c678dd; }
+      .text-mag-br   { fill: #d898ee; }
+      .text-green    { fill: #98c379; }
+      .text-green-br { fill: #a8d389; }
+      .text-red      { fill: #e06c75; }
+      .text-yellow   { fill: #e5c07b; }
+      .text-blue-br  { fill: #61afef; }
+      .text-dim      { fill: #5c6370; }
+
+      /* === KEYFRAMES — each line: hidden → appear → visible → fade out → hidden === */
+
+      @keyframes typeCmd {
+        0%     { clip-path: inset(0 100% 0 0); }
+        8.3%   { clip-path: inset(0 0% 0 0); }
+        83.3%  { clip-path: inset(0 0% 0 0); }
+        88.9%  { clip-path: inset(0 100% 0 0); }
+        100%   { clip-path: inset(0 100% 0 0); }
+      }
+
+      @keyframes showAt10 {
+        0%, 9%    { opacity: 0; }
+        12%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt15 {
+        0%, 14.5% { opacity: 0; }
+        17%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt17 {
+        0%, 17%   { opacity: 0; }
+        19%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt21 {
+        0%, 20%   { opacity: 0; }
+        22.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt24 {
+        0%, 23.5% { opacity: 0; }
+        25%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt26 {
+        0%, 26%   { opacity: 0; }
+        28%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt29 {
+        0%, 28.5% { opacity: 0; }
+        30.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      /* Spinner: visible 32.2%–43.3% only */
+      @keyframes showSpinner {
+        0%, 31.5% { opacity: 0; }
+        32.2%     { opacity: 1; }
+        42.5%     { opacity: 1; }
+        43.3%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt43 {
+        0%, 42.5% { opacity: 0; }
+        44.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt45 {
+        0%, 45%   { opacity: 0; }
+        46.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt48 {
+        0%, 48%   { opacity: 0; }
+        50%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt50 {
+        0%, 50%   { opacity: 0; }
+        51.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt51 {
+        0%, 51%   { opacity: 0; }
+        52.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt54 {
+        0%, 53.5% { opacity: 0; }
+        55%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt57 {
+        0%, 57%   { opacity: 0; }
+        59%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt60 {
+        0%, 59%   { opacity: 0; }
+        61%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt61 {
+        0%, 61%   { opacity: 0; }
+        62.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt63 {
+        0%, 62.5% { opacity: 0; }
+        64%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt67 {
+        0%, 66.5% { opacity: 0; }
+        69%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt71 {
+        0%, 70%   { opacity: 0; }
+        72%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt72 {
+        0%, 72%   { opacity: 0; }
+        73.5%     { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      @keyframes showAt74 {
+        0%, 73.5% { opacity: 0; }
+        75%       { opacity: 1; }
+        83.3%     { opacity: 1; }
+        88.9%     { opacity: 0; }
+        100%      { opacity: 0; }
+      }
+
+      /* Spinner character rotation */
+      @keyframes spinA {
+        0%   { opacity: 1; } 12.5% { opacity: 0; }
+        87.5% { opacity: 0; } 100% { opacity: 1; }
+      }
+      @keyframes spinB {
+        0%    { opacity: 0; } 12.5% { opacity: 1; }
+        25%   { opacity: 0; } 100%  { opacity: 0; }
+      }
+      @keyframes spinC {
+        0%    { opacity: 0; } 25%   { opacity: 1; }
+        37.5% { opacity: 0; } 100%  { opacity: 0; }
+      }
+      @keyframes spinD {
+        0%    { opacity: 0; } 37.5% { opacity: 1; }
+        50%   { opacity: 0; } 100%  { opacity: 0; }
+      }
+      @keyframes spinE {
+        0%    { opacity: 0; } 50%   { opacity: 1; }
+        62.5% { opacity: 0; } 100%  { opacity: 0; }
+      }
+      @keyframes spinF {
+        0%    { opacity: 0; } 62.5% { opacity: 1; }
+        75%   { opacity: 0; } 100%  { opacity: 0; }
+      }
+      @keyframes spinG {
+        0%    { opacity: 0; } 75%   { opacity: 1; }
+        87.5% { opacity: 0; } 100%  { opacity: 0; }
+      }
+
+      /* Apply classes */
+      .anim-cmd       { clip-path: inset(0 100% 0 0); animation: typeCmd 18s steps(40) infinite; }
+      .anim-logo      { opacity: 0; animation: showAt10 18s ease infinite; }
+      .anim-welcome   { opacity: 0; animation: showAt15 18s ease infinite; }
+      .anim-tools     { opacity: 0; animation: showAt17 18s ease infinite; }
+      .anim-q1        { opacity: 0; animation: showAt21 18s ease infinite; }
+      .anim-a1        { opacity: 0; animation: showAt24 18s ease infinite; }
+      .anim-q2        { opacity: 0; animation: showAt26 18s ease infinite; }
+      .anim-a2        { opacity: 0; animation: showAt29 18s ease infinite; }
+      .anim-spinner   { opacity: 0; animation: showSpinner 18s ease infinite; }
+      .anim-connected { opacity: 0; animation: showAt43 18s ease infinite; }
+      .anim-srvfound  { opacity: 0; animation: showAt45 18s ease infinite; }
+      .anim-selheader { opacity: 0; animation: showAt48 18s ease infinite; }
+      .anim-srv1      { opacity: 0; animation: showAt50 18s ease infinite; }
+      .anim-srv2      { opacity: 0; animation: showAt51 18s ease infinite; }
+      .anim-selconf   { opacity: 0; animation: showAt54 18s ease infinite; }
+      .anim-clheader  { opacity: 0; animation: showAt57 18s ease infinite; }
+      .anim-cl1       { opacity: 0; animation: showAt60 18s ease infinite; }
+      .anim-cl2       { opacity: 0; animation: showAt61 18s ease infinite; }
+      .anim-cl3       { opacity: 0; animation: showAt63 18s ease infinite; }
+      .anim-done      { opacity: 0; animation: showAt67 18s ease infinite; }
+      .anim-sum1      { opacity: 0; animation: showAt71 18s ease infinite; }
+      .anim-sum2      { opacity: 0; animation: showAt72 18s ease infinite; }
+      .anim-sum3      { opacity: 0; animation: showAt74 18s ease infinite; }
+
+      .sp-a { opacity: 0; animation: spinA 0.64s step-end infinite; }
+      .sp-b { opacity: 0; animation: spinB 0.64s step-end infinite; }
+      .sp-c { opacity: 0; animation: spinC 0.64s step-end infinite; }
+      .sp-d { opacity: 0; animation: spinD 0.64s step-end infinite; }
+      .sp-e { opacity: 0; animation: spinE 0.64s step-end infinite; }
+      .sp-f { opacity: 0; animation: spinF 0.64s step-end infinite; }
+      .sp-g { opacity: 0; animation: spinG 0.64s step-end infinite; }
+    </style>
+  </defs>
+
+  <!-- Terminal background -->
+  <rect width="800" height="560" rx="10" fill="#1e1e2e"/>
+
+  <!-- Title bar -->
+  <rect width="800" height="36" rx="10" fill="#16161e"/>
+  <rect y="20" width="800" height="16" fill="#16161e"/>
+  <circle cx="20" cy="18" r="6" fill="#e06c75"/>
+  <circle cx="40" cy="18" r="6" fill="#e5c07b"/>
+  <circle cx="60" cy="18" r="6" fill="#98c379"/>
+  <text x="400" y="22" text-anchor="middle" class="mono text-dim" font-size="12">Terminal</text>
+
+  <!-- === CONTENT === -->
+
+  <!-- 1. Command (typewriter) -->
+  <g class="anim-cmd" transform="translate(20, 58)">
+    <text class="mono text-green-br" font-size="14" font-weight="bold">$</text>
+    <text x="16" class="mono text-default" font-size="14"> npx @quadslab.io/discord-mcp init</text>
+  </g>
+
+  <!-- 2. Block logo (cyan bright top → cyan mid → magenta bottom) -->
+  <g class="anim-logo" transform="translate(20, 80)">
+    <text class="mono text-cyan-br" font-size="11" font-weight="bold" xml:space="preserve">   ██████╗ ██╗   ██╗ █████╗ ██████╗ ███████╗</text>
+    <text y="13" class="mono text-cyan-br" font-size="11" font-weight="bold" xml:space="preserve">  ██╔═══██╗██║   ██║██╔══██╗██╔══██╗██╔════╝</text>
+    <text y="26" class="mono text-cyan" font-size="11" xml:space="preserve">  ██║   ██║██║   ██║███████║██║  ██║███████║</text>
+    <text y="39" class="mono text-cyan" font-size="11" xml:space="preserve">  ██║▄▄ ██║██║   ██║██╔══██║██║  ██║╚════██║</text>
+    <text y="52" class="mono text-magenta" font-size="11" xml:space="preserve">  ╚██████╔╝╚██████╔╝██║  ██║██████╔╝███████║</text>
+    <text y="65" class="mono text-magenta" font-size="11" xml:space="preserve">   ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚══════╝</text>
+    <text y="82" class="mono" font-size="12">
+      <tspan class="text-mag-br" font-weight="bold" xml:space="preserve">        L A B </tspan><tspan class="text-dim">.io</tspan>
+    </text>
+  </g>
+
+  <!-- 3. Welcome -->
+  <g class="anim-welcome" transform="translate(20, 186)">
+    <text class="mono text-bold" font-size="14" font-weight="bold">Discord MCP Server</text>
+    <text x="170" class="mono text-dim" font-size="14" xml:space="preserve">  —  </text>
+    <text x="206" class="mono text-dim" font-size="14">Interactive Setup Wizard</text>
+  </g>
+
+  <!-- 4. Tool count -->
+  <g class="anim-tools" transform="translate(20, 206)">
+    <text class="mono text-dim" font-size="13">134 admin tools across 20 categories</text>
+  </g>
+
+  <!-- 5. Bot question -->
+  <g class="anim-q1" transform="translate(20, 232)">
+    <text class="mono text-cyan-br" font-size="14">?</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> Do you already have a Discord bot?</text>
+  </g>
+
+  <!-- Answer: y -->
+  <g class="anim-a1" transform="translate(316, 232)">
+    <text class="mono text-cyan-br" font-size="14" font-weight="bold">y</text>
+  </g>
+
+  <!-- 6. Token prompt -->
+  <g class="anim-q2" transform="translate(20, 252)">
+    <text class="mono text-cyan-br" font-size="14">?</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> Paste your bot token:</text>
+  </g>
+
+  <!-- Masked token -->
+  <g class="anim-a2" transform="translate(216, 252)">
+    <text class="mono text-dim" font-size="14">••••••••••••••••••••••</text>
+  </g>
+
+  <!-- 7. Spinner (visible 5.8s–7.8s only) -->
+  <g class="anim-spinner" transform="translate(20, 276)">
+    <text class="sp-a mono text-cyan-br" font-size="14">⠋</text>
+    <text class="sp-b mono text-cyan-br" font-size="14">⠙</text>
+    <text class="sp-c mono text-cyan-br" font-size="14">⠹</text>
+    <text class="sp-d mono text-cyan-br" font-size="14">⠸</text>
+    <text class="sp-e mono text-cyan-br" font-size="14">⠼</text>
+    <text class="sp-f mono text-cyan-br" font-size="14">⠴</text>
+    <text class="sp-g mono text-cyan-br" font-size="14">⠧</text>
+    <text x="16" class="mono text-default" font-size="14"> Authenticating bot token...</text>
+  </g>
+
+  <!-- 8. Connected checkmark -->
+  <g class="anim-connected" transform="translate(20, 276)">
+    <text class="mono text-green-br" font-size="14">✔</text>
+    <text x="16" class="mono text-default" font-size="14"> Connected as </text>
+    <text x="140" class="mono text-bold" font-size="14" font-weight="bold">QuadsBot#1234</text>
+  </g>
+
+  <!-- 9. Servers found -->
+  <g class="anim-srvfound" transform="translate(20, 296)">
+    <text class="mono text-green-br" font-size="14">✔</text>
+    <text x="16" class="mono text-default" font-size="14"> Servers found: </text>
+    <text x="148" class="mono text-bold" font-size="14" font-weight="bold">2</text>
+  </g>
+
+  <!-- 10. Select server header -->
+  <g class="anim-selheader" transform="translate(20, 322)">
+    <text class="mono text-cyan-br" font-size="14">?</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> Select your server:</text>
+  </g>
+
+  <!-- Server 1 (selected) -->
+  <g class="anim-srv1" transform="translate(36, 342)">
+    <text class="mono text-cyan-br" font-size="14">❯</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> QuadsLab HQ</text>
+    <text x="148" class="mono text-dim" font-size="13"> (2,847 members)</text>
+  </g>
+
+  <!-- Server 2 -->
+  <g class="anim-srv2" transform="translate(36, 360)">
+    <text class="mono text-dim" font-size="14" xml:space="preserve">  </text>
+    <text x="16" class="mono text-default" font-size="14"> Testing Ground</text>
+    <text x="168" class="mono text-dim" font-size="13"> (12 members)</text>
+  </g>
+
+  <!-- Selection confirmed -->
+  <g class="anim-selconf" transform="translate(20, 386)">
+    <text class="mono text-green-br" font-size="14">✔</text>
+    <text x="16" class="mono text-default" font-size="14"> Server: </text>
+    <text x="88" class="mono text-bold" font-size="14" font-weight="bold">QuadsLab HQ</text>
+  </g>
+
+  <!-- 11. Configure MCP Clients header -->
+  <g class="anim-clheader" transform="translate(20, 412)">
+    <text class="mono text-bold" font-size="14" font-weight="bold">Detected MCP clients:</text>
+  </g>
+
+  <!-- Client 1: Claude Code (● = detected) -->
+  <g class="anim-cl1" transform="translate(36, 432)">
+    <text class="mono text-green-br" font-size="14">●</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> Claude Code</text>
+  </g>
+
+  <!-- Client 2: Cursor -->
+  <g class="anim-cl2" transform="translate(36, 450)">
+    <text class="mono text-green-br" font-size="14">●</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> Cursor</text>
+  </g>
+
+  <!-- Client 3: Claude Desktop -->
+  <g class="anim-cl3" transform="translate(36, 468)">
+    <text class="mono text-green-br" font-size="14">●</text>
+    <text x="16" class="mono text-bold" font-size="14" font-weight="bold"> Claude Desktop</text>
+  </g>
+
+  <!-- 12. Setup complete -->
+  <g class="anim-done" transform="translate(20, 496)">
+    <text class="mono text-green-br" font-size="15" font-weight="bold">✔  Setup complete!</text>
+  </g>
+
+  <!-- Summary lines -->
+  <g class="anim-sum1" transform="translate(20, 518)">
+    <text class="mono text-dim" font-size="13">Bot:</text>
+    <text x="68" class="mono text-bold" font-size="13" font-weight="bold">QuadsBot#1234</text>
+    <text x="186" class="mono text-dim" font-size="13">(NjE2...kQ)</text>
+  </g>
+
+  <g class="anim-sum2" transform="translate(20, 534)">
+    <text class="mono text-dim" font-size="13">Server:</text>
+    <text x="68" class="mono text-bold" font-size="13" font-weight="bold">QuadsLab HQ</text>
+    <text x="170" class="mono text-dim" font-size="13">(1234567890)</text>
+  </g>
+
+  <g class="anim-sum3" transform="translate(20, 550)">
+    <text class="mono text-dim" font-size="13">Clients:</text>
+    <text x="68" class="mono text-bold" font-size="13" font-weight="bold">Claude Code, Cursor, Claude Desktop</text>
+    <text x="358" class="mono text-green-br" font-size="13">✔</text>
+  </g>
+
+</svg>

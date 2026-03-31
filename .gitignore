@@ -50,6 +50,7 @@ data/
 
 # Claude / QuadCode local files
 .claude/
+.quadcode/
 .mcp.json
 CLAUDE.md
 

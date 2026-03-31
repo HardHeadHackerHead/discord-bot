@@ -4,6 +4,7 @@ import { command as reloadCommand } from './commands/reload.js';
 import { command as settingsCommand } from './commands/settings.js';
 import { command as linesCommand } from './commands/lines.js';
 import { command as clearCommand } from './commands/clear.js';
+import { command as summarizeCommand } from './commands/summarize.js';
 import { interactionCreateEvent } from './events/interactionCreate.js';
 import { initCodeStatsService } from './services/CodeStatsService.js';
 import { Logger } from '../../shared/utils/logger.js';
@@ -39,6 +40,7 @@ export class AdminModule extends BaseModule {
       settingsCommand,
       linesCommand,
       clearCommand,
+      summarizeCommand,
     ];
 
     // Register events

@@ -143,6 +143,32 @@ export interface LabOwnerLeftEvent {
   remainingMemberIds: string[];
 }
 
+// ==================== Music Module Events ====================
+
+/**
+ * Emitted when a track starts playing
+ * Event: `music:track-played`
+ */
+export interface MusicTrackPlayedEvent {
+  trackId: string;
+  title: string;
+  artist: string;
+  guildId: string;
+  userId: string;
+}
+
+/**
+ * Emitted when a like is toggled on a track
+ * Event: `music:track-liked`
+ */
+export interface MusicTrackLikedEvent {
+  trackId: string;
+  title: string;
+  userId: string;
+  guildId: string;
+  liked: boolean;
+}
+
 // ==================== Event Name Constants ====================
 
 /**
@@ -170,4 +196,8 @@ export const MODULE_EVENTS = {
 
   // Dynamic Lab
   LAB_OWNER_LEFT: 'dynamic-lab:owner-left',
+
+  // Music
+  MUSIC_TRACK_PLAYED: 'music:track-played',
+  MUSIC_TRACK_LIKED: 'music:track-liked',
 } as const;

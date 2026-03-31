@@ -30,6 +30,9 @@ RUN npx prisma generate
 # Copy source code
 COPY . .
 
+# Install Remotion sub-project dependencies (credits video renderer)
+RUN cd src/modules/stream-credits/credits-video && npm install --omit=dev
+
 # Build TypeScript
 RUN npm run build
 
@@ -41,7 +44,8 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Install runtime dependencies for native modules, FFmpeg for audio processing, and ngrok for tunneling
+# Install runtime dependencies for native modules, FFmpeg for audio processing, ngrok for tunneling,
+# and Chromium dependencies for Remotion video rendering
 RUN apt-get update && apt-get install -y \
     libcairo2 \
     libpango-1.0-0 \
@@ -53,6 +57,20 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
     unzip \
+    # Chromium dependencies for Remotion headless rendering
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libxshmfence1 \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Install ngrok (download zip, extract, move to bin)
@@ -74,6 +92,9 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+
+# Copy Remotion credits-video project (source + node_modules for rendering)
+COPY --from=builder /app/src/modules/stream-credits/credits-video ./credits-video
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
