@@ -1,6 +1,5 @@
-import { DatabaseService } from '../../../core/database/mysql.js';
+import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 import { Logger } from '../../../shared/utils/logger.js';
-import { RowDataPacket } from 'mysql2';
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { createHash } from 'crypto';
 import path from 'path';
@@ -172,9 +171,9 @@ export class CodeStatsService {
     try {
       // Try to insert - will fail silently if hash already exists (duplicate)
       await this.db.execute(
-        `INSERT IGNORE INTO admin_code_stats
+        `INSERT INTO admin_code_stats
          (total_lines, code_lines, comment_lines, blank_lines, file_count, module_count, stats_hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
         [stats.totalLines, stats.codeLines, stats.commentLines, stats.blankLines, stats.fileCount, stats.moduleCount, hash]
       );
 

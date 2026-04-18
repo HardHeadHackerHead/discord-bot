@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=mysql://quadslab:${MYSQL_PASSWORD:-botpassword}@db:3306/quadslab_bot
+      - DATABASE_URL=postgresql://quadslab:${POSTGRES_PASSWORD:-botpassword}@db:5432/quadslab_bot
       # Website integration settings
       - WEBSITE_URL=${WEBSITE_URL}
       - WEBSITE_WEBHOOK_SECRET=${WEBSITE_WEBHOOK_SECRET}
@@ -26,20 +26,19 @@ services:
       - bot-network
 
   db:
-    image: mysql:8.0
+    image: postgres:16
     container_name: quadslab-db
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
-      - MYSQL_DATABASE=quadslab_bot
-      - MYSQL_USER=quadslab
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-botpassword}
+      - POSTGRES_DB=quadslab_bot
+      - POSTGRES_USER=quadslab
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-botpassword}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - pg-data:/var/lib/postgresql/data
     ports:
-      - "3307:3306"  # Using 3307 externally since 3306 is likely in use
+      - "5433:5432"  # Using 5433 externally to avoid conflict with local PostgreSQL
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test: ["CMD-SHELL", "pg_isready -U quadslab -d quadslab_bot"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,4 +51,4 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
+  pg-data:

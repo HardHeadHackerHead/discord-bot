@@ -6,7 +6,7 @@ import { ModuleRegistry } from './ModuleRegistry.js';
 import { ModuleLoader, ModuleLoadError } from './ModuleLoader.js';
 import { DependencyResolver, CircularDependencyError, MissingDependencyError } from './DependencyResolver.js';
 import { MigrationRunner } from '../database/MigrationRunner.js';
-import { DatabaseService } from '../database/mysql.js';
+import { DatabaseService } from '../database/postgres.js';
 import { ModuleEventBus, moduleEventBus } from './ModuleEventBus.js';
 import { Logger } from '../../shared/utils/logger.js';
 
@@ -304,8 +304,10 @@ export class ModuleManager {
 
   /**
    * Unload a specific module
+   * @param persistState - If true, sets enabled=false in the database (for user-initiated disables).
+   *                       If false, only clears loadedAt (for shutdown/restart scenarios).
    */
-  async unloadModule(moduleId: string, force: boolean = false): Promise<boolean> {
+  async unloadModule(moduleId: string, force: boolean = false, persistState: boolean = true): Promise<boolean> {
     const loaded = this.loadedModules.get(moduleId);
     if (!loaded) {
       logger.warn(`Module ${moduleId} is not loaded`);
@@ -351,7 +353,7 @@ export class ModuleManager {
       // Update database
       await this.prisma.module.update({
         where: { id: moduleId },
-        data: { enabled: false, loadedAt: null },
+        data: { enabled: persistState ? false : undefined, loadedAt: null },
       });
 
       logger.info(`Module ${moduleId} unloaded successfully`);
@@ -379,7 +381,7 @@ export class ModuleManager {
     await loaded.instance.onReload?.();
 
     // Unload and reload
-    const unloaded = await this.unloadModule(moduleId, true);
+    const unloaded = await this.unloadModule(moduleId, true, false);
     if (!unloaded) {
       return false;
     }
@@ -526,7 +528,7 @@ export class ModuleManager {
     const moduleIds = Array.from(this.loadedModules.keys()).reverse();
 
     for (const moduleId of moduleIds) {
-      await this.unloadModule(moduleId, true);
+      await this.unloadModule(moduleId, true, false);
     }
 
     logger.info('All modules shut down');

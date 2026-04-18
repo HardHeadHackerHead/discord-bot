@@ -1,0 +1,51 @@
+# Nixpacks configuration for Railway deployment
+# System packages mirror what was in the Dockerfile for native module support
+
+[phases.setup]
+aptPkgs = [
+  # Build tools for native modules (canvas, sharp, etc.)
+  "build-essential",
+  "python3",
+  "pkg-config",
+  "libcairo2-dev",
+  "libpango1.0-dev",
+  "libjpeg-dev",
+  "libgif-dev",
+  "librsvg2-dev",
+  # Runtime
+  "ffmpeg",
+  "openssl",
+  # Chromium dependencies for Remotion video rendering
+  "libnss3",
+  "libatk1.0-0",
+  "libatk-bridge2.0-0",
+  "libcups2",
+  "libdrm2",
+  "libxkbcommon0",
+  "libxcomposite1",
+  "libxdamage1",
+  "libxrandr2",
+  "libgbm1",
+  "libasound2t64",
+  "libxshmfence1",
+  "fonts-liberation",
+]
+
+# Install dependencies and generate Prisma client
+[phases.install]
+cmds = [
+  "npm ci",
+  "npx prisma generate",
+]
+
+# Build TypeScript, install Remotion sub-project, and prune dev dependencies
+[phases.build]
+cmds = [
+  "npm run build",
+  "if [ -d src/modules/stream-credits/credits-video ]; then cd src/modules/stream-credits/credits-video && npm install --omit=dev; fi",
+  "npm prune --omit=dev",
+]
+
+# Start the bot
+[start]
+cmd = "node dist/index.js"

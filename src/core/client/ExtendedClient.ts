@@ -6,7 +6,7 @@ import {
   Events,
 } from 'discord.js';
 import { prisma, connectPrisma, disconnectPrisma } from '../database/prisma.js';
-import { testMySQLConnection, closeMySQLPool } from '../database/mysql.js';
+import { testConnection, closePool } from '../database/postgres.js';
 import { ModuleManager } from '../modules/ModuleManager.js';
 import { CommandManager } from '../commands/CommandManager.js';
 import { EventManager } from '../events/EventManager.js';
@@ -229,10 +229,10 @@ export class ExtendedClient extends Client {
     logger.info('Connecting to database...');
     await connectPrisma();
 
-    // Test MySQL connection (module tables)
-    const mysqlConnected = await testMySQLConnection();
-    if (!mysqlConnected) {
-      throw new Error('Failed to connect to MySQL database');
+    // Test PostgreSQL connection (module tables)
+    const dbConnected = await testConnection();
+    if (!dbConnected) {
+      throw new Error('Failed to connect to PostgreSQL database');
     }
 
     logger.info('Database connected');
@@ -279,7 +279,7 @@ export class ExtendedClient extends Client {
 
     // Disconnect from database
     await disconnectPrisma();
-    await closeMySQLPool();
+    await closePool();
 
     // Destroy Discord client
     this.destroy();

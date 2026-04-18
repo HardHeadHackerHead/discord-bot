@@ -2,7 +2,7 @@ import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.ty
 import { command as rolesCommand, setRoleService as setCommandRoleService } from './commands/roles.js';
 import { interactionCreateEvent, setRoleService as setInteractionRoleService } from './events/interactionCreate.js';
 import { RoleService } from './services/RoleService.js';
-import { DatabaseService } from '../../core/database/mysql.js';
+import { DatabaseService } from '../../core/database/postgres.js';
 import { Logger } from '../../shared/utils/logger.js';
 
 const logger = new Logger('RoleManagement');

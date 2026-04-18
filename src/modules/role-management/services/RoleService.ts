@@ -8,9 +8,8 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from 'discord.js';
-import { DatabaseService } from '../../../core/database/mysql.js';
+import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 import { Logger } from '../../../shared/utils/logger.js';
-import { RowDataPacket } from 'mysql2';
 import { randomUUID } from 'crypto';
 import { COLORS } from '../../../shared/utils/embed.js';
 

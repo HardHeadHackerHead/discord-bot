@@ -14,7 +14,7 @@ Thanks for your interest in contributing! This document covers the process for c
 
 You'll need:
 - Node.js 18+
-- MySQL 8.0+ (or use Docker: `docker compose up db -d`)
+- PostgreSQL 14+ (or use Docker: `docker compose up db -d`)
 - A Discord bot token for testing
 
 ```bash

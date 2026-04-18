@@ -1,7 +1,6 @@
-import { DatabaseService } from '../../../core/database/mysql.js';
+import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 import { ModuleEventBus } from '../../../core/modules/ModuleEventBus.js';
 import { Logger } from '../../../shared/utils/logger.js';
-import { RowDataPacket } from 'mysql2';
 import { randomUUID } from 'crypto';
 import { MODULE_EVENTS, MessageCountedEvent } from '../../../types/module-events.types.js';
 
@@ -64,8 +63,8 @@ export class MessageTrackingService {
       }
     }
 
-    // Count the message
-    const newCount = stats.message_count + 1;
+    // Count the message (pg returns BIGINT as string, so parse it)
+    const newCount = Number(stats.message_count) + 1;
     await this.db.execute(
       `UPDATE messages_stats
        SET message_count = ?, last_message_at = ?, last_counted_at = ?
@@ -159,7 +158,7 @@ export class MessageTrackingService {
     const safeDays = Math.max(1, Math.min(30, days));
     return this.db.query<(DailyMessageStats & RowDataPacket)[]>(
       `SELECT * FROM messages_daily_stats
-       WHERE user_id = ? AND guild_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+       WHERE user_id = ? AND guild_id = ? AND date >= CURRENT_DATE - MAKE_INTERVAL(days => ?)
        ORDER BY date DESC`,
       [userId, guildId, safeDays]
     );

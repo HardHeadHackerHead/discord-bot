@@ -26,14 +26,14 @@ npm install @quadslab.io/discord-bot
 - **Leaderboard Registry** — Any module can register leaderboard providers, all accessible through a unified `/leaderboard` command
 - **Cron Scheduler** — Built-in scheduled task runner with per-module job registration
 - **AI Provider Abstraction** — Pluggable AI backends (Claude, OpenAI) for modules that need AI features
-- **Docker Ready** — Multi-stage Docker build with MySQL service, health checks, and compose orchestration
+- **Docker Ready** — Multi-stage Docker build with PostgreSQL service, health checks, and compose orchestration
 
 ## Quick Start
 
 ### Prerequisites
 
 - **Node.js 18+** — [Download](https://nodejs.org/)
-- **MySQL 8.0+** — [Download](https://dev.mysql.com/downloads/) or use Docker (see below)
+- **PostgreSQL 14+** — [Download](https://www.postgresql.org/download/) or use Docker (see below)
 - **Discord Bot Token** — Create an application at the [Discord Developer Portal](https://discord.com/developers/applications)
 
 ### Step 1: Create a Discord Application
@@ -74,11 +74,11 @@ Edit `.env` and fill in the **required** values:
 BOT_TOKEN=your_bot_token_here
 CLIENT_ID=your_client_id_here
 
-# REQUIRED — MySQL connection string
-# If using local MySQL:
-DATABASE_URL=mysql://root:yourpassword@localhost:3306/quadslab_bot
-# If using Docker MySQL (see below):
-DATABASE_URL=mysql://root:rootpassword@localhost:3307/quadslab_bot
+# REQUIRED — PostgreSQL connection string
+# If using local PostgreSQL:
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/quadslab_bot
+# If using Docker PostgreSQL (see below):
+DATABASE_URL=postgresql://quadslab:botpassword@localhost:5433/quadslab_bot
 
 # RECOMMENDED — your Discord server ID for instant command updates
 # Right-click your server name in Discord (Developer Mode must be enabled) → Copy Server ID
@@ -87,9 +87,9 @@ DEV_GUILD_ID=your_server_id_here
 
 ### Step 4: Set Up the Database
 
-**Option A: Local MySQL**
+**Option A: Local PostgreSQL**
 
-Create the database in MySQL:
+Create the database in PostgreSQL:
 ```sql
 CREATE DATABASE quadslab_bot;
 ```
@@ -103,18 +103,18 @@ npm run db:generate
 npm run db:push
 ```
 
-**Option B: Docker MySQL (no local install needed)**
+**Option B: Docker PostgreSQL (no local install needed)**
 
 ```bash
 # Start just the database
 docker compose up db -d
 
-# Wait 10 seconds for MySQL to initialize, then run:
+# Wait a few seconds for PostgreSQL to initialize, then run:
 npm run db:generate
 npm run db:push
 ```
 
-This starts MySQL on port **3307** (to avoid conflicting with any local MySQL on 3306).
+This starts PostgreSQL on port **5433** (to avoid conflicting with any local PostgreSQL on 5432).
 
 ### Step 5: Start the Bot
 
@@ -139,7 +139,7 @@ You should see output like:
 To run everything in Docker:
 
 ```bash
-# Start bot and MySQL together
+# Start bot and PostgreSQL together
 docker compose up -d
 
 # View logs
@@ -155,7 +155,7 @@ docker compose down
 |---|---|---|---|
 | `BOT_TOKEN` | Yes | — | Discord bot token |
 | `CLIENT_ID` | Yes | — | Discord application client ID |
-| `DATABASE_URL` | Yes | — | MySQL connection string (`mysql://user:pass@host:port/db`) |
+| `DATABASE_URL` | Yes | — | PostgreSQL connection string (`postgresql://user:pass@host:port/db`) |
 | `DEV_GUILD_ID` | No | — | Guild ID for instant slash command registration |
 | `NODE_ENV` | No | `development` | `development`, `production`, or `test` |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, or `error` |
@@ -413,7 +413,7 @@ QuadsLabBot/
 ├── prisma/                     # Prisma schema and core migrations
 ├── docs/                       # Documentation
 ├── Dockerfile                  # Multi-stage Docker build
-└── docker-compose.yml          # Docker Compose (bot + MySQL)
+└── docker-compose.yml          # Docker Compose (bot + PostgreSQL)
 ```
 
 ## Scripts

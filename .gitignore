@@ -48,6 +48,10 @@ SQL_BACKUPS/
 recordings/
 data/
 
+# Secrets / credentials
+youtube-key.json
+**/youtube-key.json
+
 # Claude / QuadCode local files
 .claude/
 .quadcode/

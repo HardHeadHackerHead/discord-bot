@@ -73,12 +73,6 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# Install ngrok (download zip, extract, move to bin)
-RUN curl -Lo /tmp/ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip \
-    && unzip /tmp/ngrok.zip -d /tmp \
-    && mv /tmp/ngrok /usr/local/bin/ngrok \
-    && chmod +x /usr/local/bin/ngrok \
-    && rm /tmp/ngrok.zip
 
 # Copy package files (for reference)
 COPY package*.json ./

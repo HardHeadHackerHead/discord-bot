@@ -2,7 +2,7 @@ import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import { prisma } from './prisma.js';
-import { db } from './mysql.js';
+import { db } from './postgres.js';
 import { Logger } from '../../shared/utils/logger.js';
 
 const logger = new Logger('MigrationRunner');

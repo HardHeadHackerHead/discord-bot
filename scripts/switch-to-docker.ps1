@@ -40,9 +40,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Wait for MySQL to be ready
-Write-Host "Waiting for MySQL to be ready..." -ForegroundColor Gray
-Start-Sleep -Seconds 10
+# Wait for PostgreSQL to be ready
+Write-Host "Waiting for PostgreSQL to be ready..." -ForegroundColor Gray
+Start-Sleep -Seconds 5
 
 Write-Host ""
 

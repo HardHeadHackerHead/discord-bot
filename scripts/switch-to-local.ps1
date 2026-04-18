@@ -1,6 +1,6 @@
 # Switch from Docker production to local development
 # This script:
-# 1. Syncs Docker database to your local MySQL
+# 1. Syncs Docker database to your local PostgreSQL
 # 2. Syncs Docker data folder (images, state files) to local
 # 3. Stops the Docker containers
 # 4. Reminds you to start local dev

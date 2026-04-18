@@ -2,7 +2,7 @@ import type { Client } from 'discord.js';
 import type { PrismaClient } from '@prisma/client';
 import type { ModuleCommand } from './command.types.js';
 import type { AnyModuleEvent } from './event.types.js';
-import type { DatabaseService } from '../core/database/mysql.js';
+import type { DatabaseService } from '../core/database/postgres.js';
 import type { ModuleEventBus } from '../core/modules/ModuleEventBus.js';
 
 /**

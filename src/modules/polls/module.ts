@@ -2,7 +2,7 @@ import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.ty
 import { command as pollCommand, setPollsService as setCommandService } from './commands/poll.js';
 import { interactionCreateEvent, setPollsService as setInteractionService, setEventBus } from './events/interactionCreate.js';
 import { PollsService } from './services/PollsService.js';
-import { DatabaseService } from '../../core/database/mysql.js';
+import { DatabaseService } from '../../core/database/postgres.js';
 import { Logger } from '../../shared/utils/logger.js';
 
 const logger = new Logger('Polls');

@@ -24,8 +24,8 @@ This means you can have two versions of the bot:
 |---------|-------------|
 | `npm run docker:switch` | Switch to Docker production (rebuild + sync local DB → Docker) |
 | `npm run local:switch` | Switch to local development (sync Docker DB → local + stop Docker) |
-| `npm run docker:sync-to` | Sync local MySQL → Docker MySQL (without rebuilding) |
-| `npm run docker:sync-from` | Sync Docker MySQL → local MySQL |
+| `npm run docker:sync-to` | Sync local DB → Docker DB (without rebuilding) |
+| `npm run docker:sync-from` | Sync Docker DB → local DB |
 
 ## Docker Compose Commands
 
@@ -168,7 +168,7 @@ npm run docker:sync-from  # Docker → Local (before local testing)
 | File | Purpose |
 |------|---------|
 | `Dockerfile` | Defines how the bot image is built |
-| `docker-compose.yml` | Defines bot + MySQL services |
+| `docker-compose.yml` | Defines bot + PostgreSQL services |
 | `docker-entrypoint.sh` | Startup script (runs prisma db push if needed) |
 | `.env` | Your environment variables (BOT_TOKEN, etc.) |
 | `scripts/sync-db-to-docker.ps1` | Local → Docker sync script |
@@ -185,8 +185,7 @@ The following environment variables are used by Docker (set in `.env` or `docker
 | `BOT_TOKEN` | Discord bot token | (required) |
 | `CLIENT_ID` | Discord application ID | (required) |
 | `NODE_ENV` | Environment mode | `production` |
-| `MYSQL_PASSWORD` | MySQL user password | `botpassword` |
-| `MYSQL_ROOT_PASSWORD` | MySQL root password | `rootpassword` |
+| `POSTGRES_PASSWORD` | PostgreSQL user password | `botpassword` |
 | `LOG_LEVEL` | Logging level | `info` |
 | `WEBHOOK_SERVER_PORT` | Port for website webhook server | `3001` |
 | `WEBSITE_URL` | Website base URL | (required for website integration) |
@@ -245,13 +244,13 @@ Then configure the website to use `https://bot-api.yourdomain.com` as the bot en
 
 ## Troubleshooting
 
-### Port 3306 already in use
+### Port 5432 already in use
 
-If you have MySQL running locally, Docker can't use port 3306. The docker-compose.yml maps to port 3307 externally. If you need to connect to Docker MySQL from your machine:
+If you have PostgreSQL running locally, Docker can't use port 5432. The docker-compose.yml maps to port 5433 externally. If you need to connect to Docker PostgreSQL from your machine:
 
 ```
 Host: localhost
-Port: 3307
+Port: 5433
 User: quadslab
 Password: botpassword
 Database: quadslab_bot
@@ -260,7 +259,7 @@ Database: quadslab_bot
 ### Database sync fails
 
 1. Make sure Docker containers are running: `docker-compose up -d`
-2. Wait for MySQL to be ready (check with `docker-compose logs db`)
+2. Wait for PostgreSQL to be ready (check with `docker-compose logs db`)
 3. Try running the sync script directly with verbose output
 
 ### Bot won't start - "modules table not found"

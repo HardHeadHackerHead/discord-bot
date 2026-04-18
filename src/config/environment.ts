@@ -73,21 +73,24 @@ export function isBotOwner(userId: string): boolean {
 }
 
 /**
- * Parse MySQL connection URL into components
+ * Parse PostgreSQL connection URL into components
  */
-export function parseDatabaseUrl(url: string): {
+export function parseDatabaseUrl(url?: string): {
   host: string;
   port: number;
   user: string;
   password: string;
   database: string;
+  ssl: boolean;
 } {
-  const parsed = new URL(url);
+  const parsed = new URL(url ?? env.DATABASE_URL);
+  const sslmode = parsed.searchParams.get('sslmode');
   return {
     host: parsed.hostname,
-    port: parseInt(parsed.port || '3306', 10),
-    user: parsed.username,
-    password: parsed.password,
-    database: parsed.pathname.slice(1), // Remove leading slash
+    port: parseInt(parsed.port || '5432', 10),
+    user: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+    database: parsed.pathname.slice(1),
+    ssl: sslmode ? sslmode !== 'disable' : env.NODE_ENV === 'production',
   };
 }

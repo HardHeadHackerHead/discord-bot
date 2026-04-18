@@ -51,7 +51,7 @@ import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.ty
 import { command as myCommand, setService } from './commands/mycommand.js';
 import { interactionCreateEvent, setService as setInteractionService } from './events/interactionCreate.js';
 import { MyService } from './services/MyService.js';
-import { DatabaseService } from '../../core/database/mysql.js';
+import { DatabaseService } from '../../core/database/postgres.js';
 import { Logger } from '../../shared/utils/logger.js';
 
 const logger = new Logger('MyModule');
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS mymod_items (
 
 The migration runner splits SQL by semicolons. These features are **NOT supported**:
 
-- `DELIMITER` statements (MySQL client command, not SQL)
+- `DELIMITER` statements (not standard SQL)
 - Stored procedures with `BEGIN...END` blocks
 - Multi-statement triggers
 
@@ -188,8 +188,7 @@ The migration runner splits SQL by semicolons. These features are **NOT supporte
 ### DatabaseService Usage
 
 ```typescript
-import { DatabaseService } from '../../../core/database/mysql.js';
-import { RowDataPacket } from 'mysql2';
+import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 
 interface MyItem {
   id: string;
@@ -384,9 +383,8 @@ Services contain business logic and database operations.
 ```typescript
 // services/MyService.ts
 import { Guild, GuildMember } from 'discord.js';
-import { DatabaseService } from '../../../core/database/mysql.js';
+import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 import { Logger } from '../../../shared/utils/logger.js';
-import { RowDataPacket } from 'mysql2';
 import { randomUUID } from 'crypto';
 
 const logger = new Logger('MyModule:Service');

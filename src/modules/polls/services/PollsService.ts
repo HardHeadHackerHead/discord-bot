@@ -6,9 +6,8 @@ import {
   Message,
 } from 'discord.js';
 import { randomUUID } from 'crypto';
-import { DatabaseService } from '../../../core/database/mysql.js';
+import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 import { Logger } from '../../../shared/utils/logger.js';
-import { RowDataPacket } from 'mysql2';
 import { PollsPanel } from '../components/PollsPanel.js';
 
 const logger = new Logger('Polls:Service');
@@ -494,7 +493,7 @@ export class PollsService {
     const result = await this.db.execute(
       `DELETE FROM polls_polls
        WHERE status IN ('ended', 'cancelled')
-       AND ended_at < DATE_SUB(NOW(), INTERVAL ? DAY)`,
+       AND ended_at < NOW() - MAKE_INTERVAL(days => ?)`,
       [daysToKeep]
     );
     if (result.affectedRows > 0) {
