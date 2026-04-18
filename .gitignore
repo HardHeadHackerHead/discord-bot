@@ -79,18 +79,22 @@ src/modules/*/
 !src/modules/message-editor/
 
 # --- Tier 2: Consider later ---
-# !src/modules/welcome/
-# !src/modules/server-stats/
-# !src/modules/social-feeds/
-# !src/modules/dynamic-lab/
-# !src/modules/inactive-users/
+!src/modules/welcome/
+!src/modules/server-stats/
+!src/modules/social-feeds/
+!src/modules/dynamic-lab/
+!src/modules/inactive-users/
+!src/modules/booster-perks/
+!src/modules/humor-competition/
+!src/modules/music/
+!src/modules/stream-credits/
 
 # --- Tier 3: Private ---
-# !src/modules/gambling/
-# !src/modules/voice-ai/
-# !src/modules/meeting/
-# !src/modules/website-integration/
-# !src/modules/server-guide/
-# !src/modules/ideas/
-# !src/modules/test-recording/
-# !src/modules/voice-join/
+!src/modules/gambling/
+!src/modules/voice-ai/
+!src/modules/meeting/
+!src/modules/website-integration/
+!src/modules/server-guide/
+!src/modules/ideas/
+!src/modules/test-recording/
+!src/modules/voice-join/
