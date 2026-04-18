@@ -29,8 +29,9 @@ export class YouTubeService {
   private apiKey: string | null = null;
 
   async loadApiKey(): Promise<void> {
-    if (process.env.YOUTUBE_API_KEY) {
-      this.apiKey = process.env.YOUTUBE_API_KEY;
+    const envKey = process.env['YOUTUBE_API_KEY'];
+    if (envKey) {
+      this.apiKey = envKey;
       logger.info('YouTube API key loaded from environment');
       return;
     }
