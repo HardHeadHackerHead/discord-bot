@@ -144,14 +144,43 @@ export const command: SlashCommand = {
 
     try {
       const inputBuffer = await service.fetchImage(sourceUrl);
-      const resultBuffer = await service.applyLaserEyes(inputBuffer, interaction.user.id, hexColor, deepfry);
 
-      const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
-      const fryNote = deepfry ? ' 🍟 (deepfried)' : '';
-      await interaction.editReply({
-        content: `🔴 ${colorLabel} lasers charged on ${label}.${fryNote} ⚡`,
-        files: [file],
-      });
+      if (deepfry) {
+        // Tasting-flight mode: produce 5 deepfry intensities so the user
+        // can pick the best one. Levels span from a light fry to maximum
+        // chaos. Discord allows up to 10 attachments per message, so 5
+        // fits comfortably.
+        const levels: { pct: number; intensity: number }[] = [
+          { pct: 15, intensity: 0.15 },
+          { pct: 30, intensity: 0.30 },
+          { pct: 50, intensity: 0.50 },
+          { pct: 75, intensity: 0.75 },
+          { pct: 100, intensity: 1.00 },
+        ];
+
+        const svc = service;
+        const buffers = await Promise.all(
+          levels.map(l => svc.applyLaserEyes(inputBuffer, interaction.user.id, hexColor, l.intensity))
+        );
+
+        const files = buffers.map((b, i) =>
+          new AttachmentBuilder(b, { name: `lasereyes_fry${levels[i]!.pct}.png` })
+        );
+
+        await interaction.editReply({
+          content:
+            `🔴 ${colorLabel} lasers charged on ${label}. 🍟 Deepfry tasting flight ` +
+            `(${levels.map(l => `${l.pct}%`).join(' / ')}) — pick your favorite. ⚡`,
+          files,
+        });
+      } else {
+        const resultBuffer = await service.applyLaserEyes(inputBuffer, interaction.user.id, hexColor, 0);
+        const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
+        await interaction.editReply({
+          content: `🔴 ${colorLabel} lasers charged on ${label}. ⚡`,
+          files: [file],
+        });
+      }
     } catch (error) {
       // Error replies go back only to the invoker. The deferred "thinking…"
       // reply is public, so we delete it first and send an ephemeral follow-up.
