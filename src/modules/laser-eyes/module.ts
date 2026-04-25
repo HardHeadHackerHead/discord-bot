@@ -1,5 +1,5 @@
 import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.types.js';
-import { command as laserEyesCommand, setService as setCommandService } from './commands/lasereyes.js';
+import { command as fryCommand, setService as setCommandService } from './commands/fry.js';
 import { messageCreateEvent, setService as setEventService } from './events/messageCreate.js';
 import { interactionCreateEvent, setService as setInteractionService } from './events/interactionCreate.js';
 import { LaserEyesService } from './services/LaserEyesService.js';
@@ -40,7 +40,7 @@ export class LaserEyesModule extends BaseModule {
 
   constructor() {
     super();
-    this.commands = [laserEyesCommand];
+    this.commands = [fryCommand];
     this.events = [messageCreateEvent, interactionCreateEvent];
   }
 

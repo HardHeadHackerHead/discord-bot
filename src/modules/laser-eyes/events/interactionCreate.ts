@@ -1,6 +1,6 @@
 import { Interaction, StringSelectMenuInteraction, AttachmentBuilder, MessageFlags } from 'discord.js';
 import { AnyModuleEvent } from '../../../types/event.types.js';
-import { LaserEyesService, EyesNotDetectedError, GLOW_COLORS, resolveGlowColor, pickRandomGlowColor } from '../services/LaserEyesService.js';
+import { LaserEyesService, GLOW_COLORS, resolveGlowColor, pickRandomGlowColor } from '../services/LaserEyesService.js';
 import {
   LaserEyesPanel,
   LaserEyesPanelState,
@@ -98,15 +98,18 @@ async function handlePanelSelect(
 
   try {
     const inputBuffer = await svc.fetchImage(next.sourceUrl);
-    const resultBuffer = await svc.applyLaserEyes(
+    const { buffer: resultBuffer, eyesDetected } = await svc.applyLaserEyes(
       inputBuffer,
       next.requesterId,
       next.hexColor,
       next.fryIntensity,
       true, // skipCooldown — panel re-renders shouldn't burn the cooldown
+      true, // eyesOptional — keep working even if detection fails on re-render
     );
 
-    const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
+    next.eyesDetected = eyesDetected;
+
+    const file = new AttachmentBuilder(resultBuffer, { name: 'fry.png' });
     await interaction.editReply({
       content: LaserEyesPanel.buildContent(next),
       files: [file],
@@ -115,15 +118,6 @@ async function handlePanelSelect(
 
     setPanelState(messageId, next);
   } catch (error) {
-    if (error instanceof EyesNotDetectedError) {
-      // Don't blow away the existing image on a failed re-render — let the
-      // user know via ephemeral follow-up that the new combo couldn't render.
-      await interaction.followUp({
-        content: `👁️ Couldn't re-render: ${error.message}`,
-        flags: MessageFlags.Ephemeral,
-      }).catch(() => {});
-      return;
-    }
     logger.error('Panel re-render failed:', error);
     await interaction.followUp({
       content: '💥 Re-render failed. Try a different combination.',

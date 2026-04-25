@@ -19,6 +19,11 @@ export interface LaserEyesPanelState {
   requesterId: string;
   /** Human-readable label for the source ("your avatar", "this image", etc.). */
   label: string;
+  /**
+   * Whether the most recent render had detectable eyes. When false, the color
+   * select still appears but doesn't actually do anything visible (no laser).
+   */
+  eyesDetected: boolean;
   /** When this state was last touched. Used by the TTL cleanup sweep. */
   lastTouched: number;
 }
@@ -97,13 +102,20 @@ export class LaserEyesPanel {
 
   /** Render the message content line that goes above the image. */
   static buildContent(state: LaserEyesPanelState): string {
-    const colorWord = state.colorChoice === COLOR_RANDOM_VALUE
-      ? `random (${describeHex(state.hexColor)})`
-      : state.colorChoice;
     const fryLevel = FRY_LEVELS.find(l => l.intensity === state.fryIntensity);
     const fryNote = state.fryIntensity > 0
       ? ` 🍟 ${fryLevel?.label ?? `${Math.round(state.fryIntensity * 100)}%`}`
       : '';
+
+    if (!state.eyesDetected) {
+      // No face detected — color choice doesn't matter, just describe the fry.
+      const fryLabel = state.fryIntensity > 0 ? `Fried${fryNote}` : 'Just the image';
+      return `🍟 ${fryLabel} on ${state.label}. (no eyes detected — couldn't add lasers)`;
+    }
+
+    const colorWord = state.colorChoice === COLOR_RANDOM_VALUE
+      ? `random (${describeHex(state.hexColor)})`
+      : state.colorChoice;
     return `🔴 ${colorWord} lasers on ${state.label}.${fryNote} ⚡`;
   }
 }

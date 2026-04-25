@@ -115,7 +115,9 @@ export const messageCreateEvent: AnyModuleEvent = {
 
     try {
       const inputBuffer = await service.fetchImage(sourceUrl);
-      const resultBuffer = await service.applyLaserEyes(inputBuffer, message.author.id, hexColor!, deepfry ? 1 : 0);
+      const { buffer: resultBuffer } = await service.applyLaserEyes(
+        inputBuffer, message.author.id, hexColor!, deepfry ? 1 : 0
+      );
 
       const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
       const fryNote = deepfry ? ' 🍟 (deepfried)' : '';

@@ -7,11 +7,11 @@ import {
   Attachment,
 } from 'discord.js';
 import { SlashCommand } from '../../../types/command.types.js';
-import { LaserEyesService, EyesNotDetectedError, GLOW_COLORS, resolveGlowColor, pickRandomGlowColor } from '../services/LaserEyesService.js';
-import { LaserEyesPanel, setPanelState, COLOR_RANDOM_VALUE, fryLevelByValue, FRY_INTENSITY_VALUES } from '../components/LaserEyesPanel.js';
+import { LaserEyesService, pickRandomGlowColor } from '../services/LaserEyesService.js';
+import { LaserEyesPanel, setPanelState, COLOR_RANDOM_VALUE } from '../components/LaserEyesPanel.js';
 import { Logger } from '../../../shared/utils/logger.js';
 
-const logger = new Logger('LaserEyes:Command');
+const logger = new Logger('LaserEyes:Fry');
 
 let service: LaserEyesService | null = null;
 
@@ -19,49 +19,28 @@ export function setService(s: LaserEyesService): void {
   service = s;
 }
 
+/** Default deepfry intensity for a fresh /fry invocation. Users adjust via the panel. */
+const DEFAULT_FRY_INTENSITY = 0.5;
+
 export const command: SlashCommand = {
   type: 'slash',
   data: new SlashCommandBuilder()
-    .setName('lasereyes')
-    .setDescription('Charge up some laser eyes. 👁️🔴')
+    .setName('fry')
+    .setDescription('Fry an avatar or image. 🍟 Adds laser eyes if a face is detected.')
     .addUserOption(opt =>
       opt.setName('user')
-        .setDescription('Whose avatar to zap (defaults to yourself)')
+        .setDescription('Whose avatar to fry (defaults to yourself or the most recent image in chat)')
         .setRequired(false)
     )
     .addAttachmentOption(opt =>
       opt.setName('image')
-        .setDescription('Or zap a custom image instead')
+        .setDescription('Or fry a specific image')
         .setRequired(false)
-    )
-    .addStringOption(opt =>
-      opt.setName('color')
-        .setDescription('Glow color (random if not set). Preset or #hex like #ff00ff.')
-        .setRequired(false)
-        .addChoices(
-          ...(Object.keys(GLOW_COLORS) as (keyof typeof GLOW_COLORS)[]).map(name => ({
-            name,
-            value: name,
-          }))
-        )
-    )
-    .addStringOption(opt =>
-      opt.setName('deepfry')
-        .setDescription('Initial deepfry intensity (you can change it from the panel after).')
-        .setRequired(false)
-        .addChoices(
-          { name: 'Off',          value: '0' },
-          { name: 'Light (15%)',  value: '0.15' },
-          { name: 'Medium (30%)', value: '0.3' },
-          { name: 'Hot (50%)',    value: '0.5' },
-          { name: 'Crispy (75%)', value: '0.75' },
-          { name: 'MAX (100%)',   value: '1' },
-        )
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!service) {
-      await interaction.reply({ content: 'Laser eyes service not initialized.', ephemeral: true });
+      await interaction.reply({ content: 'Fry service not initialized.', ephemeral: true });
       return;
     }
 
@@ -76,7 +55,7 @@ export const command: SlashCommand = {
     const cooldown = service.getCooldownRemaining(interaction.user.id);
     if (cooldown > 0) {
       await interaction.reply({
-        content: `🧊 Your lasers are cooling down. Try again in ${cooldown}s.`,
+        content: `🧊 The fryer is cooling down. Try again in ${cooldown}s.`,
         ephemeral: true,
       });
       return;
@@ -90,40 +69,17 @@ export const command: SlashCommand = {
       `attachment=${attachment ? `${attachment.name}(${attachment.contentType ?? 'no-type'})` : 'none'} ` +
       `user=${interaction.options.getUser('user')?.id ?? 'none'}`
     );
-    const colorInput = interaction.options.getString('color');
-    const fryInput = interaction.options.getString('deepfry');
-    const fryIntensity = fryInput && FRY_INTENSITY_VALUES.includes(fryInput)
-      ? fryLevelByValue(fryInput)?.intensity ?? 0
-      : 0;
 
-    // Resolve initial color choice. The "choice" we save in panel state is
-    // either a preset name, COLOR_RANDOM_VALUE, or a literal #hex string.
-    let hexColor: string;
-    let colorChoice: string;
-    if (colorInput) {
-      const resolved = resolveGlowColor(colorInput);
-      if (resolved === null) {
-        await interaction.reply({
-          content: `❌ Invalid color \`${colorInput}\`. Use a preset or #RRGGBB hex.`,
-          ephemeral: true,
-        });
-        return;
-      }
-      hexColor = resolved;
-      colorChoice = colorInput;
-    } else {
-      // No color picked — start in random mode so each refresh rolls a new color.
-      const random = pickRandomGlowColor();
-      hexColor = random.hex;
-      colorChoice = COLOR_RANDOM_VALUE;
-    }
+    // Roll a random glow color to start. User can override via the panel.
+    const random = pickRandomGlowColor();
+    const hexColor = random.hex;
+    const colorChoice = COLOR_RANDOM_VALUE;
+    const fryIntensity = DEFAULT_FRY_INTENSITY;
 
-    // Resolve the source image + a label for the response message.
-    // Priority:
-    //   1. `image` slash option (explicit attachment)
-    //   2. `user` slash option → that user's avatar
-    //   3. Most recent image posted by the invoker in this channel (lets
-    //      users drop an image, then type /lasereyes — no parameter needed)
+    // Resolve source image. Priority:
+    //   1. `image` attachment (explicit)
+    //   2. `user` option → that user's avatar
+    //   3. Most recent image posted by the invoker in this channel
     //   4. Invoker's own avatar
     let sourceUrl: string;
     let label: string;
@@ -157,8 +113,13 @@ export const command: SlashCommand = {
 
     try {
       const inputBuffer = await service.fetchImage(sourceUrl);
-      const resultBuffer = await service.applyLaserEyes(
-        inputBuffer, interaction.user.id, hexColor, fryIntensity
+      const { buffer: resultBuffer, eyesDetected } = await service.applyLaserEyes(
+        inputBuffer,
+        interaction.user.id,
+        hexColor,
+        fryIntensity,
+        false, // don't skip cooldown on initial invocation
+        true,  // eyesOptional — fall back to fry-only if no face found
       );
 
       const initialState = {
@@ -168,10 +129,11 @@ export const command: SlashCommand = {
         fryIntensity,
         requesterId: interaction.user.id,
         label,
+        eyesDetected,
         lastTouched: Date.now(),
       };
 
-      const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
+      const file = new AttachmentBuilder(resultBuffer, { name: 'fry.png' });
       const sent = await interaction.editReply({
         content: LaserEyesPanel.buildContent(initialState),
         files: [file],
@@ -182,20 +144,12 @@ export const command: SlashCommand = {
       // can look it up and re-render on subsequent select changes.
       setPanelState(sent.id, initialState);
     } catch (error) {
-      // Error replies go back only to the invoker. The deferred "thinking…"
-      // reply is public, so we delete it first and send an ephemeral follow-up.
+      // Eye-detection failure is now handled inside the service via
+      // eyesOptional=true, so reaching this branch means a real fault.
       await interaction.deleteReply().catch(() => {});
-
-      if (error instanceof EyesNotDetectedError) {
-        await interaction.followUp({
-          content: `👁️ I couldn't find any eyes on ${label}. Try a clearer, front-facing portrait.`,
-          ephemeral: true,
-        }).catch(() => {});
-        return;
-      }
-      logger.error('Laser eyes command failed:', error);
+      logger.error('/fry failed:', error);
       await interaction.followUp({
-        content: '💥 The laser array misfired. Try again in a moment.',
+        content: '💥 The fryer misfired. Try again in a moment.',
         ephemeral: true,
       }).catch(() => {});
     }
@@ -211,7 +165,6 @@ function isImageAttachment(a: Attachment): boolean {
   );
 }
 
-/** How far back to scan the channel for a recent user-posted image. */
 const RECENT_IMAGE_LOOKBACK_COUNT = 15;
 const RECENT_IMAGE_MAX_AGE_MS = 5 * 60 * 1000;
 

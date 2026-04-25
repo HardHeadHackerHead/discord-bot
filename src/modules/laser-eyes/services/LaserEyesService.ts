@@ -540,8 +540,15 @@ export class LaserEyesService {
     /** 0 = no deepfry, 1 = max-level deepfry, fractional values interpolate. */
     deepfryIntensity: number = 0,
     /** Skip the per-user cooldown — used for interactive panel re-renders. */
-    skipCooldown: boolean = false
-  ): Promise<Buffer> {
+    skipCooldown: boolean = false,
+    /**
+     * If true and eyes can't be detected, skip the laser composite and
+     * proceed with deepfry/passthrough on the un-lasered image instead of
+     * throwing EyesNotDetectedError. The return value's `eyesDetected`
+     * field tells the caller whether lasers were applied.
+     */
+    eyesOptional: boolean = false
+  ): Promise<{ buffer: Buffer; eyesDetected: boolean }> {
     // Normalize EXIF orientation up-front. Phone photos (especially JPEG)
     // often store sideways pixels with an EXIF rotate tag, which would
     // confuse the orientation-sensitive Haar face detector. .rotate() with
@@ -549,12 +556,32 @@ export class LaserEyesService {
     // detection + compositing both operate on the visually-upright buffer.
     const normalized = await sharp(imageBuffer).rotate().png().toBuffer();
 
-    const placements = await this.detectEyes(normalized);
-    const laserPng = await this.pickLaserPng();
+    // Try to detect eyes. If eyes are optional and detection fails, we skip
+    // the laser composite and just deepfry / pass through the source image.
+    let placements: EyePlacement[] | null;
+    try {
+      placements = await this.detectEyes(normalized);
+    } catch (error) {
+      if (eyesOptional && error instanceof EyesNotDetectedError) {
+        placements = null;
+      } else {
+        throw error;
+      }
+    }
 
     const meta = await sharp(normalized).metadata();
     const imgW = meta.width ?? 0;
     const imgH = meta.height ?? 0;
+
+    // Short circuit: no eyes + eyes-optional → just run the (optional)
+    // deepfry on the un-lasered image.
+    if (placements === null) {
+      const output = deepfryIntensity > 0 ? await deepfryImage(normalized, deepfryIntensity) : normalized;
+      if (!skipCooldown) this.startCooldown(requesterId);
+      return { buffer: output, eyesDetected: false };
+    }
+
+    const laserPng = await this.pickLaserPng();
 
     // Build overlays first so we know the biggest one — that determines how
     // much we need to pad the canvas to allow the glow to extend past the
@@ -616,7 +643,7 @@ export class LaserEyesService {
     if (!skipCooldown) {
       this.startCooldown(requesterId);
     }
-    return output;
+    return { buffer: output, eyesDetected: true };
   }
 }
 
