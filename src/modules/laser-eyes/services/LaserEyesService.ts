@@ -628,60 +628,102 @@ function lerp(start: number, end: number, t: number): number {
  *
  *   intensity = 0   → no-op (caller should skip deepfry entirely)
  *   intensity = 1   → max chaos (current ceiling)
- *   intensity in between → all parameters interpolated linearly
  *
- * The pipeline: chromatic chaos via per-channel saturation, asymmetric warm
- * shift, bloom on highlights, sharpen-before-JPEG so the compression mangles
- * the over-sharpened edges into halos, three JPEG round-trips that compound
- * blocking and banding artifacts.
+ * Key technique stolen from real deepfried memes: each JPEG pass is done at
+ * a REDUCED resolution then scaled back up. That makes the 8×8 JPEG block
+ * artifacts visibly chunky across the whole image (not just at edges) and
+ * forces flat regions into the stepped/posterized look you see in proper
+ * fried images. Without this, the artifacts are too fine to see.
+ *
+ * Pipeline:
+ *   1. Saturation/brightness explosion
+ *   2. Contrast crush
+ *   3. Asymmetric per-channel warm shift (preserves hue)
+ *   4. Aggressive sharpen #1
+ *   5. DOWNSCALE → JPEG q1 → UPSCALE  (chunky block artifacts)
+ *   6. Re-saturate + sharpen #2
+ *   7. DOWNSCALE harder → JPEG q2 → UPSCALE  (compounds artifacts)
+ *   8. Bloom: blur copy, screen-blend over original (halation)
+ *   9. Final saturation/brightness top-up + midtone gamma
+ *  10. Final JPEG round-trip at native resolution, back to PNG
  */
 async function deepfryImage(input: Buffer, intensity: number): Promise<Buffer> {
   const t = Math.max(0, Math.min(1, intensity));
 
-  // Each parameter is identity (no effect) at t=0, max at t=1.
-  const sat1     = lerp(1.0,  2.8, t);
+  // Get source dimensions so we can scale-down → compress → scale-up.
+  const meta = await sharp(input).metadata();
+  const W = meta.width ?? 1;
+  const H = meta.height ?? 1;
+
+  // Interpolated parameters — identity at t=0, max chaos at t=1.
+  const sat1     = lerp(1.0,  3.2, t);
   const bright1  = lerp(1.0,  1.05, t);
-  const contrast = lerp(1.0,  1.8, t);
-  const offset   = lerp(0,    -40, t);
-  const chR      = lerp(1.0,  1.18, t);
+  const contrast = lerp(1.0,  2.0, t);
+  const offset   = lerp(0,    -45, t);
+  const chR      = lerp(1.0,  1.22, t);
   const chG      = lerp(1.0,  1.05, t);
-  const chB      = lerp(1.0,  0.88, t);
-  const offR     = lerp(0,    4,   t);
-  const offB     = lerp(0,    -8,  t);
-  const blurAmt  = lerp(0.3,  8,   t);   // sharp.blur() requires sigma > 0.3
-  const sharp1   = lerp(0.3,  2.5, t);
-  const sharp2   = lerp(0.3,  1.8, t);
-  // Lower JPEG quality = more artifacts. Identity = quality 95.
-  const q1       = Math.round(lerp(95, 10, t));
-  const q2       = Math.round(lerp(95,  7, t));
-  const q3       = Math.round(lerp(95,  8, t));
-  const sat2     = lerp(1.0,  1.8, t);
-  const sat3     = lerp(1.0,  1.4, t);
-  const bright3  = lerp(1.0,  1.04, t);
-  const gam      = lerp(1.0,  1.2, t);
+  const chB      = lerp(1.0,  0.85, t);
+  const offR     = lerp(0,    8,   t);
+  const offB     = lerp(0,    -10, t);
+  const sharp1   = lerp(0.3,  3.5, t);
+  const sharp2   = lerp(0.3,  2.5, t);
+  // JPEG quality ramps from 95 (identity) down to brutal levels.
+  const q1       = Math.round(lerp(95, 8, t));
+  const q2       = Math.round(lerp(95, 5, t));
+  const q3       = Math.round(lerp(95, 8, t));
+  // Downscale fractions — at max chaos we shrink the image to 35% then 25%
+  // of its original linear dimension before JPEG compression. That makes the
+  // block artifacts visibly chunky when we upscale back. At t=0 we don't
+  // shrink at all (fraction = 1.0).
+  const ds1Frac  = lerp(1.0, 0.35, t);
+  const ds2Frac  = lerp(1.0, 0.25, t);
+  const sat2     = lerp(1.0, 2.0, t);
+  const sat3     = lerp(1.0, 1.5, t);
+  const bright3  = lerp(1.0, 1.05, t);
+  const gam      = lerp(1.0, 1.25, t);
+  const blurAmt  = lerp(0.3, 6,   t);
+
+  const ds1W = Math.max(1, Math.round(W * ds1Frac));
+  const ds1H = Math.max(1, Math.round(H * ds1Frac));
+  const ds2W = Math.max(1, Math.round(W * ds2Frac));
+  const ds2H = Math.max(1, Math.round(H * ds2Frac));
 
   // 1) Saturation explosion (preserves hue) + brightness lift.
   let buf = await sharp(input).modulate({ saturation: sat1, brightness: bright1 }).toBuffer();
   // 2) Contrast crush.
   buf = await sharp(buf).linear(contrast, offset).toBuffer();
-  // 3) Asymmetric warm shift — per-channel scaling so greens/blues survive.
+  // 3) Asymmetric warm shift — per-channel scaling, NOT a uniform tint.
   buf = await sharp(buf).linear([chR, chG, chB], [offR, 0, offB]).toBuffer();
-  // 4) Bloom: blur a copy, screen-blend back over the original.
+  // 4) Sharpen pass #1.
+  buf = await sharp(buf).sharpen({ sigma: sharp1, m1: 5, m2: 5 }).toBuffer();
+  // 5) DOWNSCALE → JPEG → UPSCALE. This is what makes block artifacts CHUNKY.
+  //    Encoding at small size + nearest-neighbor upscale keeps the blocky
+  //    look; using the default lanczos upscale would soften it.
+  buf = await sharp(buf)
+    .resize(ds1W, ds1H, { kernel: 'lanczos3' })
+    .jpeg({ quality: q1, chromaSubsampling: '4:2:0' })
+    .toBuffer();
+  buf = await sharp(buf).resize(W, H, { kernel: 'nearest' }).toBuffer();
+  // 6) Re-saturate (JPEG kills saturation) + sharpen the artifacts.
+  buf = await sharp(buf)
+    .modulate({ saturation: sat2 })
+    .sharpen({ sigma: sharp2, m1: 4, m2: 4 })
+    .toBuffer();
+  // 7) Even more aggressive downscale → JPEG → upscale. This pass adds
+  //    the second layer of block grain at a different scale, creating the
+  //    overlapping artifact pattern that gives "real deepfry" its texture.
+  buf = await sharp(buf)
+    .resize(ds2W, ds2H, { kernel: 'lanczos3' })
+    .jpeg({ quality: q2, chromaSubsampling: '4:2:0' })
+    .toBuffer();
+  buf = await sharp(buf).resize(W, H, { kernel: 'nearest' }).toBuffer();
+  // 8) Bloom — blur a copy, screen-blend over original. Bright regions
+  //    (lasers, highlights) bleed glow outward.
   const blurred = await sharp(buf).blur(blurAmt).toBuffer();
   buf = await sharp(buf).composite([{ input: blurred, blend: 'screen' }]).toBuffer();
-  // 5) Sharpen pass #1 — done before JPEG so artifacts ring around the edges.
-  buf = await sharp(buf).sharpen({ sigma: sharp1, m1: 4, m2: 4 }).toBuffer();
-  // 6) JPEG round-trip #1.
-  buf = await sharp(buf).jpeg({ quality: q1, chromaSubsampling: '4:2:0' }).toBuffer();
-  // 7) Re-saturate (JPEG dulls saturation).
-  buf = await sharp(buf).modulate({ saturation: sat2 }).toBuffer();
-  // 8) Sharpen pass #2 — sharpens the artifacts from pass 6.
-  buf = await sharp(buf).sharpen({ sigma: sharp2, m1: 3, m2: 3 }).toBuffer();
-  // 9) JPEG round-trip #2.
-  buf = await sharp(buf).jpeg({ quality: q2, chromaSubsampling: '4:2:0' }).toBuffer();
-  // 10) Final saturation/brightness top-up + midtone darken via gamma.
+  // 9) Final saturation/brightness top-up + midtone darken (gamma > 1).
   buf = await sharp(buf).modulate({ saturation: sat3, brightness: bright3 }).gamma(gam).toBuffer();
-  // 11) Final JPEG round-trip #3, then back to PNG for the caller.
+  // 10) Final JPEG round-trip at native resolution to bake everything in.
   buf = await sharp(buf).jpeg({ quality: q3, chromaSubsampling: '4:2:0' }).toBuffer();
   return sharp(buf).png().toBuffer();
 }
