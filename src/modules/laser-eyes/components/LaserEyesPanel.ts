@@ -9,19 +9,24 @@ import { GLOW_COLORS } from '../services/LaserEyesService.js';
 export interface LaserEyesPanelState {
   /** URL of the original (un-lasered) source image, used to re-render. */
   sourceUrl: string;
-  /** Currently selected glow color: a key of GLOW_COLORS, '_random', or '#hex'. */
+  /** Currently selected glow color: a key of GLOW_COLORS, '_random', '_off', or '#hex'. */
   colorChoice: string;
   /** Resolved hex color in use right now (after random rolls etc.). */
   hexColor: string;
   /** Currently selected deepfry intensity: '0' / '0.15' / '0.3' / '0.5' / '0.75' / '1'. */
   fryIntensity: number;
+  /**
+   * When true, the laser composite is skipped even if eyes are detected.
+   * Set by picking COLOR_OFF_VALUE from the color dropdown.
+   */
+  lasersDisabled: boolean;
   /** Discord user ID who created this panel — only they can modify it. */
   requesterId: string;
   /** Human-readable label for the source ("your avatar", "this image", etc.). */
   label: string;
   /**
-   * Whether the most recent render had detectable eyes. When false, the color
-   * select still appears but doesn't actually do anything visible (no laser).
+   * Whether the source image had detectable eyes at all. When false, the
+   * color row is omitted from the panel entirely (lasers are impossible).
    */
   eyesDetected: boolean;
   /** When this state was last touched. Used by the TTL cleanup sweep. */
@@ -46,6 +51,7 @@ export function fryLevelByValue(value: string): { label: string; intensity: numb
 }
 
 export const COLOR_RANDOM_VALUE = '_random';
+export const COLOR_OFF_VALUE = '_off';
 
 export class LaserEyesPanel {
   /**
@@ -62,10 +68,18 @@ export class LaserEyesPanel {
 
       colorOptions.push(
         new StringSelectMenuOptionBuilder()
+          .setLabel('🚫 No lasers')
+          .setValue(COLOR_OFF_VALUE)
+          .setDescription('Just fry the image, skip the laser eyes')
+          .setDefault(state.lasersDisabled)
+      );
+
+      colorOptions.push(
+        new StringSelectMenuOptionBuilder()
           .setLabel('🎲 Random')
           .setValue(COLOR_RANDOM_VALUE)
           .setDescription('Pick a random preset each time')
-          .setDefault(state.colorChoice === COLOR_RANDOM_VALUE)
+          .setDefault(!state.lasersDisabled && state.colorChoice === COLOR_RANDOM_VALUE)
       );
 
       for (const name of Object.keys(GLOW_COLORS) as (keyof typeof GLOW_COLORS)[]) {
@@ -73,7 +87,7 @@ export class LaserEyesPanel {
           new StringSelectMenuOptionBuilder()
             .setLabel(name.charAt(0).toUpperCase() + name.slice(1))
             .setValue(name)
-            .setDefault(state.colorChoice === name)
+            .setDefault(!state.lasersDisabled && state.colorChoice === name)
         );
       }
 
@@ -116,6 +130,11 @@ export class LaserEyesPanel {
       // No face detected — color choice doesn't matter, just describe the fry.
       const fryLabel = state.fryIntensity > 0 ? `Fried${fryNote}` : 'Just the image';
       return `🍟 ${fryLabel} on ${state.label}. (no eyes detected — couldn't add lasers)`;
+    }
+
+    if (state.lasersDisabled) {
+      const fryLabel = state.fryIntensity > 0 ? `Fried${fryNote}` : 'Just the image';
+      return `🍟 ${fryLabel} on ${state.label}. (lasers off)`;
     }
 
     const colorWord = state.colorChoice === COLOR_RANDOM_VALUE

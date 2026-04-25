@@ -7,6 +7,7 @@ import {
   getPanelState,
   setPanelState,
   COLOR_RANDOM_VALUE,
+  COLOR_OFF_VALUE,
   fryLevelByValue,
 } from '../components/LaserEyesPanel.js';
 import { Logger } from '../../../shared/utils/logger.js';
@@ -72,19 +73,25 @@ async function handlePanelSelect(
   const next: LaserEyesPanelState = { ...state };
 
   if (interaction.customId === 'lasereyes:color') {
-    if (value === COLOR_RANDOM_VALUE) {
+    if (value === COLOR_OFF_VALUE) {
+      next.lasersDisabled = true;
+      // Keep the previous colorChoice/hexColor so re-enabling restores it.
+    } else if (value === COLOR_RANDOM_VALUE) {
       const random = pickRandomGlowColor();
       next.colorChoice = COLOR_RANDOM_VALUE;
       next.hexColor = random.hex;
+      next.lasersDisabled = false;
     } else if (value in GLOW_COLORS) {
       next.colorChoice = value;
       next.hexColor = GLOW_COLORS[value as keyof typeof GLOW_COLORS];
+      next.lasersDisabled = false;
     } else {
       // Unknown value (shouldn't happen with our preset list).
       const resolved = resolveGlowColor(value);
       if (!resolved) return;
       next.colorChoice = value;
       next.hexColor = resolved;
+      next.lasersDisabled = false;
     }
   } else if (interaction.customId === 'lasereyes:fry') {
     const level = fryLevelByValue(value);
@@ -103,8 +110,9 @@ async function handlePanelSelect(
       next.requesterId,
       next.hexColor,
       next.fryIntensity,
-      true, // skipCooldown — panel re-renders shouldn't burn the cooldown
-      true, // eyesOptional — keep working even if detection fails on re-render
+      true,                  // skipCooldown — panel re-renders shouldn't burn the cooldown
+      true,                  // eyesOptional — keep working even if detection fails on re-render
+      next.lasersDisabled,   // skipLasers — honor the "No lasers" toggle
     );
 
     next.eyesDetected = eyesDetected;

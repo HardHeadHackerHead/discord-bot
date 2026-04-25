@@ -20,7 +20,7 @@ export function setService(s: LaserEyesService): void {
 }
 
 /** Default deepfry intensity for a fresh /fry invocation. Users adjust via the panel. */
-const DEFAULT_FRY_INTENSITY = 0.5;
+const DEFAULT_FRY_INTENSITY = 0.3;
 
 export const command: SlashCommand = {
   type: 'slash',
@@ -134,6 +134,7 @@ export const command: SlashCommand = {
         colorChoice,
         hexColor,
         fryIntensity,
+        lasersDisabled: false,
         requesterId: interaction.user.id,
         label,
         eyesDetected,

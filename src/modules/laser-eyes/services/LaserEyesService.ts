@@ -547,14 +547,30 @@ export class LaserEyesService {
      * throwing EyesNotDetectedError. The return value's `eyesDetected`
      * field tells the caller whether lasers were applied.
      */
-    eyesOptional: boolean = false
+    eyesOptional: boolean = false,
+    /**
+     * If true, skip the laser composite even when eyes ARE detected — used
+     * by the panel "No lasers" toggle. eyesDetected in the return value
+     * still reports the underlying detection result so the caller knows
+     * whether to show/hide the color row.
+     */
+    skipLasers: boolean = false
   ): Promise<{ buffer: Buffer; eyesDetected: boolean }> {
-    // Normalize EXIF orientation up-front. Phone photos (especially JPEG)
-    // often store sideways pixels with an EXIF rotate tag, which would
-    // confuse the orientation-sensitive Haar face detector. .rotate() with
-    // no arguments bakes the EXIF rotation into the pixels. After this,
-    // detection + compositing both operate on the visually-upright buffer.
-    const normalized = await sharp(imageBuffer).rotate().png().toBuffer();
+    // Normalize the input to a static, RGBA PNG of the first frame.
+    //
+    // - { pages: 1, animated: false } forces sharp to read only the first
+    //   frame of an animated GIF/WebP. Without this, downstream resize/
+    //   composite calls fail when the input is a multi-page image.
+    // - .rotate() bakes EXIF orientation into the pixels (phone JPEGs
+    //   store sideways pixels + a "rotate 90°" tag; we need upright pixels
+    //   for the Haar face detector).
+    // - .flatten() removes any palette/index oddities GIFs leave behind,
+    //   ensuring a clean RGB image for the rest of the pipeline.
+    const normalized = await sharp(imageBuffer, { pages: 1, animated: false })
+      .rotate()
+      .flatten({ background: { r: 0, g: 0, b: 0 } })
+      .png()
+      .toBuffer();
 
     // Try to detect eyes. If eyes are optional and detection fails, we skip
     // the laser composite and just deepfry / pass through the source image.
@@ -573,12 +589,14 @@ export class LaserEyesService {
     const imgW = meta.width ?? 0;
     const imgH = meta.height ?? 0;
 
-    // Short circuit: no eyes + eyes-optional → just run the (optional)
-    // deepfry on the un-lasered image.
-    if (placements === null) {
+    // Short circuit: no eyes + eyes-optional, OR caller asked to skip
+    // lasers — just run the (optional) deepfry on the un-lasered image.
+    // Note that we still report the underlying detection result via
+    // eyesDetected so the panel can keep the color row visible.
+    if (placements === null || skipLasers) {
       const output = deepfryIntensity > 0 ? await deepfryImage(normalized, deepfryIntensity) : normalized;
       if (!skipCooldown) this.startCooldown(requesterId);
-      return { buffer: output, eyesDetected: false };
+      return { buffer: output, eyesDetected: placements !== null };
     }
 
     const laserPng = await this.pickLaserPng();
