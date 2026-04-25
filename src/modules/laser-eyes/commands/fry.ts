@@ -175,11 +175,19 @@ function isImageAttachment(a: Attachment): boolean {
 
 const RECENT_IMAGE_LOOKBACK_COUNT = 50;
 
+const IMAGE_URL_RE = /\.(png|jpe?g|webp|gif|bmp)(\?|#|$)/i;
+
 /**
- * Look back through recent channel messages for the most recent image
- * attachment from any author (including bots). Returns URL, source message
- * ID, and original author ID, or null if nothing usable is found in the
- * last RECENT_IMAGE_LOOKBACK_COUNT messages.
+ * Look back through recent channel messages for the most recent image from
+ * any author. Checks (in priority order per message):
+ *   1. message.attachments — directly-uploaded images
+ *   2. message.embeds[].image — Tenor/Giphy GIFs, link-unfurl images
+ *   3. message.embeds[].thumbnail — video previews, animated GIF previews
+ *   4. message.embeds[].url — embed-level URLs that look like images
+ *   5. message.content — raw image URLs pasted into a message body
+ *
+ * Returns the URL, message ID, and original author ID, or null if nothing
+ * usable is found in the last RECENT_IMAGE_LOOKBACK_COUNT messages.
  */
 async function findRecentChannelImage(
   interaction: ChatInputCommandInteraction
@@ -203,9 +211,35 @@ async function findRecentChannelImage(
   for (const msg of sorted as Message[]) {
     if (msg.author.id === botUserId) continue;
 
-    const img = msg.attachments.find(isImageAttachment);
-    if (img) {
-      return { url: img.url, messageId: msg.id, authorId: msg.author.id };
+    // 1. Direct attachment.
+    const att = msg.attachments.find(isImageAttachment);
+    if (att) {
+      return { url: att.url, messageId: msg.id, authorId: msg.author.id };
+    }
+
+    // 2-4. Embeds (Tenor/Giphy GIFs, link unfurls, etc.).
+    for (const embed of msg.embeds) {
+      // Tenor often uses embed.video for animated GIFs, but the video URL
+      // is an .mp4 we can't fry. Prefer image.url which Tenor also provides
+      // (the static frame), then thumbnail.url, then embed.url itself.
+      const candidates = [
+        embed.image?.url,
+        embed.thumbnail?.url,
+        IMAGE_URL_RE.test(embed.url ?? '') ? embed.url : null,
+      ].filter((u): u is string => !!u);
+
+      for (const url of candidates) {
+        if (IMAGE_URL_RE.test(url)) {
+          return { url, messageId: msg.id, authorId: msg.author.id };
+        }
+      }
+    }
+
+    // 5. Raw image URL in message content (rarer — usually Discord
+    // converts these to embeds, but happens for proxied/CDN URLs).
+    const urlMatch = msg.content.match(/https?:\/\/\S+\.(png|jpe?g|webp|gif|bmp)(\?\S*)?/i);
+    if (urlMatch) {
+      return { url: urlMatch[0], messageId: msg.id, authorId: msg.author.id };
     }
   }
 
