@@ -88,6 +88,7 @@ src/modules/*/
 !src/modules/humor-competition/
 !src/modules/music/
 !src/modules/stream-credits/
+!src/modules/laser-eyes/
 
 # --- Tier 3: Private ---
 !src/modules/gambling/
