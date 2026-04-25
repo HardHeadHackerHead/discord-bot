@@ -538,7 +538,9 @@ export class LaserEyesService {
     requesterId: string,
     hexColor: string = GLOW_COLORS[DEFAULT_GLOW_COLOR],
     /** 0 = no deepfry, 1 = max-level deepfry, fractional values interpolate. */
-    deepfryIntensity: number = 0
+    deepfryIntensity: number = 0,
+    /** Skip the per-user cooldown — used for interactive panel re-renders. */
+    skipCooldown: boolean = false
   ): Promise<Buffer> {
     // Normalize EXIF orientation up-front. Phone photos (especially JPEG)
     // often store sideways pixels with an EXIF rotate tag, which would
@@ -611,7 +613,9 @@ export class LaserEyesService {
 
     const output = deepfryIntensity > 0 ? await deepfryImage(cropped, deepfryIntensity) : cropped;
 
-    this.startCooldown(requesterId);
+    if (!skipCooldown) {
+      this.startCooldown(requesterId);
+    }
     return output;
   }
 }

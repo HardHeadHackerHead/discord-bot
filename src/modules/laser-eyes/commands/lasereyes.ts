@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { SlashCommand } from '../../../types/command.types.js';
 import { LaserEyesService, EyesNotDetectedError, GLOW_COLORS, resolveGlowColor, pickRandomGlowColor } from '../services/LaserEyesService.js';
+import { LaserEyesPanel, setPanelState, COLOR_RANDOM_VALUE, fryLevelByValue, FRY_INTENSITY_VALUES } from '../components/LaserEyesPanel.js';
 import { Logger } from '../../../shared/utils/logger.js';
 
 const logger = new Logger('LaserEyes:Command');
@@ -44,10 +45,18 @@ export const command: SlashCommand = {
           }))
         )
     )
-    .addBooleanOption(opt =>
+    .addStringOption(opt =>
       opt.setName('deepfry')
-        .setDescription('Apply deepfried meme effect after lasering 🍟')
+        .setDescription('Initial deepfry intensity (you can change it from the panel after).')
         .setRequired(false)
+        .addChoices(
+          { name: 'Off',          value: '0' },
+          { name: 'Light (15%)',  value: '0.15' },
+          { name: 'Medium (30%)', value: '0.3' },
+          { name: 'Hot (50%)',    value: '0.5' },
+          { name: 'Crispy (75%)', value: '0.75' },
+          { name: 'MAX (100%)',   value: '1' },
+        )
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -82,12 +91,15 @@ export const command: SlashCommand = {
       `user=${interaction.options.getUser('user')?.id ?? 'none'}`
     );
     const colorInput = interaction.options.getString('color');
-    const deepfry = interaction.options.getBoolean('deepfry') ?? false;
+    const fryInput = interaction.options.getString('deepfry');
+    const fryIntensity = fryInput && FRY_INTENSITY_VALUES.includes(fryInput)
+      ? fryLevelByValue(fryInput)?.intensity ?? 0
+      : 0;
 
-    // If the user picked a color, resolve it. If they didn't, roll a random
-    // preset so each invocation feels different.
+    // Resolve initial color choice. The "choice" we save in panel state is
+    // either a preset name, COLOR_RANDOM_VALUE, or a literal #hex string.
     let hexColor: string;
-    let colorLabel: string;
+    let colorChoice: string;
     if (colorInput) {
       const resolved = resolveGlowColor(colorInput);
       if (resolved === null) {
@@ -98,11 +110,12 @@ export const command: SlashCommand = {
         return;
       }
       hexColor = resolved;
-      colorLabel = colorInput;
+      colorChoice = colorInput;
     } else {
+      // No color picked — start in random mode so each refresh rolls a new color.
       const random = pickRandomGlowColor();
       hexColor = random.hex;
-      colorLabel = random.name;
+      colorChoice = COLOR_RANDOM_VALUE;
     }
 
     // Resolve the source image + a label for the response message.
@@ -144,43 +157,30 @@ export const command: SlashCommand = {
 
     try {
       const inputBuffer = await service.fetchImage(sourceUrl);
+      const resultBuffer = await service.applyLaserEyes(
+        inputBuffer, interaction.user.id, hexColor, fryIntensity
+      );
 
-      if (deepfry) {
-        // Tasting-flight mode: produce 5 deepfry intensities so the user
-        // can pick the best one. Levels span from a light fry to maximum
-        // chaos. Discord allows up to 10 attachments per message, so 5
-        // fits comfortably.
-        const levels: { pct: number; intensity: number }[] = [
-          { pct: 15, intensity: 0.15 },
-          { pct: 30, intensity: 0.30 },
-          { pct: 50, intensity: 0.50 },
-          { pct: 75, intensity: 0.75 },
-          { pct: 100, intensity: 1.00 },
-        ];
+      const initialState = {
+        sourceUrl,
+        colorChoice,
+        hexColor,
+        fryIntensity,
+        requesterId: interaction.user.id,
+        label,
+        lastTouched: Date.now(),
+      };
 
-        const svc = service;
-        const buffers = await Promise.all(
-          levels.map(l => svc.applyLaserEyes(inputBuffer, interaction.user.id, hexColor, l.intensity))
-        );
+      const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
+      const sent = await interaction.editReply({
+        content: LaserEyesPanel.buildContent(initialState),
+        files: [file],
+        components: LaserEyesPanel.buildComponents(initialState),
+      });
 
-        const files = buffers.map((b, i) =>
-          new AttachmentBuilder(b, { name: `lasereyes_fry${levels[i]!.pct}.png` })
-        );
-
-        await interaction.editReply({
-          content:
-            `🔴 ${colorLabel} lasers charged on ${label}. 🍟 Deepfry tasting flight ` +
-            `(${levels.map(l => `${l.pct}%`).join(' / ')}) — pick your favorite. ⚡`,
-          files,
-        });
-      } else {
-        const resultBuffer = await service.applyLaserEyes(inputBuffer, interaction.user.id, hexColor, 0);
-        const file = new AttachmentBuilder(resultBuffer, { name: 'lasereyes.png' });
-        await interaction.editReply({
-          content: `🔴 ${colorLabel} lasers charged on ${label}. ⚡`,
-          files: [file],
-        });
-      }
+      // Save panel state under the message ID so the interaction handler
+      // can look it up and re-render on subsequent select changes.
+      setPanelState(sent.id, initialState);
     } catch (error) {
       // Error replies go back only to the invoker. The deferred "thinking…"
       // reply is public, so we delete it first and send an ephemeral follow-up.

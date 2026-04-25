@@ -1,7 +1,9 @@
 import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.types.js';
 import { command as laserEyesCommand, setService as setCommandService } from './commands/lasereyes.js';
 import { messageCreateEvent, setService as setEventService } from './events/messageCreate.js';
+import { interactionCreateEvent, setService as setInteractionService } from './events/interactionCreate.js';
 import { LaserEyesService } from './services/LaserEyesService.js';
+import { sweepExpiredStates } from './components/LaserEyesPanel.js';
 import { Logger } from '../../shared/utils/logger.js';
 
 const logger = new Logger('LaserEyes');
@@ -34,11 +36,12 @@ export class LaserEyesModule extends BaseModule {
   readonly migrationsPath = null;
 
   private service: LaserEyesService | null = null;
+  private sweepTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     super();
     this.commands = [laserEyesCommand];
-    this.events = [messageCreateEvent];
+    this.events = [messageCreateEvent, interactionCreateEvent];
   }
 
   async onLoad(context: ModuleContext): Promise<void> {
@@ -47,6 +50,14 @@ export class LaserEyesModule extends BaseModule {
     this.service = new LaserEyesService();
     setCommandService(this.service);
     setEventService(this.service);
+    setInteractionService(this.service);
+
+    // Sweep expired panel states every 10 minutes so the in-memory map
+    // doesn't grow without bound.
+    this.sweepTimer = setInterval(() => {
+      const removed = sweepExpiredStates();
+      if (removed > 0) logger.debug(`Swept ${removed} expired panel states`);
+    }, 10 * 60 * 1000);
 
     if (!this.service.isAvailable()) {
       logger.warn('Laser Eyes loaded but Haar cascades are missing from assets/opencv-cascades/');
@@ -56,6 +67,10 @@ export class LaserEyesModule extends BaseModule {
   }
 
   async onUnload(): Promise<void> {
+    if (this.sweepTimer) {
+      clearInterval(this.sweepTimer);
+      this.sweepTimer = null;
+    }
     this.service = null;
     await super.onUnload();
     logger.info('Laser Eyes module unloaded');
