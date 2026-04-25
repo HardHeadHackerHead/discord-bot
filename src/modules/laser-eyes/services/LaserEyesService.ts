@@ -659,7 +659,11 @@ async function deepfryImage(input: Buffer, intensity: number): Promise<Buffer> {
   const W = meta.width ?? 1;
   const H = meta.height ?? 1;
 
-  // Interpolated parameters — identity at t=0, max chaos at t=1.
+  // Interpolated parameters. Color/contrast knobs ramp from identity at
+  // t=0 to max at t=1. Downscale + JPEG knobs DON'T start at identity —
+  // even at low intensity we want visible block grain, just less of it.
+  // (If the user picks Off they get t=0 and the whole pipeline is skipped
+  // by the caller, so this only affects intensities > 0.)
   const sat1     = lerp(1.0,  3.2, t);
   const bright1  = lerp(1.0,  1.05, t);
   const contrast = lerp(1.0,  2.0, t);
@@ -671,16 +675,18 @@ async function deepfryImage(input: Buffer, intensity: number): Promise<Buffer> {
   const offB     = lerp(0,    -10, t);
   const sharp1   = lerp(0.3,  3.5, t);
   const sharp2   = lerp(0.3,  2.5, t);
-  // JPEG quality ramps from 95 (identity) down to brutal levels.
-  const q1       = Math.round(lerp(95, 8, t));
-  const q2       = Math.round(lerp(95, 5, t));
-  const q3       = Math.round(lerp(95, 8, t));
-  // Downscale fractions — at max chaos we shrink the image to 35% then 25%
-  // of its original linear dimension before JPEG compression. That makes the
-  // block artifacts visibly chunky when we upscale back. At t=0 we don't
-  // shrink at all (fraction = 1.0).
-  const ds1Frac  = lerp(1.0, 0.35, t);
-  const ds2Frac  = lerp(1.0, 0.25, t);
+  // JPEG quality starts already-low (40/30/40) at faint intensity and
+  // collapses to brutal (5/3/6) at max. Even Light fry has visible blocks.
+  const q1       = Math.round(lerp(40, 5, t));
+  const q2       = Math.round(lerp(30, 3, t));
+  const q3       = Math.round(lerp(40, 6, t));
+  // Downscale fractions — start at 0.55 (already chunky) and collapse to
+  // 0.18 / 0.12 / 0.10 at max. Three passes layered on top of each other
+  // create overlapping block grids at different sizes for that
+  // "JPEG-corrupted-into-oblivion" texture.
+  const ds1Frac  = lerp(0.55, 0.18, t);
+  const ds2Frac  = lerp(0.45, 0.12, t);
+  const ds3Frac  = lerp(0.65, 0.30, t);
   const sat2     = lerp(1.0, 2.0, t);
   const sat3     = lerp(1.0, 1.5, t);
   const bright3  = lerp(1.0, 1.05, t);
@@ -691,6 +697,8 @@ async function deepfryImage(input: Buffer, intensity: number): Promise<Buffer> {
   const ds1H = Math.max(1, Math.round(H * ds1Frac));
   const ds2W = Math.max(1, Math.round(W * ds2Frac));
   const ds2H = Math.max(1, Math.round(H * ds2Frac));
+  const ds3W = Math.max(1, Math.round(W * ds3Frac));
+  const ds3H = Math.max(1, Math.round(H * ds3Frac));
 
   // 1) Saturation explosion (preserves hue) + brightness lift.
   let buf = await sharp(input).modulate({ saturation: sat1, brightness: bright1 }).toBuffer();
@@ -700,11 +708,12 @@ async function deepfryImage(input: Buffer, intensity: number): Promise<Buffer> {
   buf = await sharp(buf).linear([chR, chG, chB], [offR, 0, offB]).toBuffer();
   // 4) Sharpen pass #1.
   buf = await sharp(buf).sharpen({ sigma: sharp1, m1: 5, m2: 5 }).toBuffer();
-  // 5) DOWNSCALE → JPEG → UPSCALE. This is what makes block artifacts CHUNKY.
-  //    Encoding at small size + nearest-neighbor upscale keeps the blocky
-  //    look; using the default lanczos upscale would soften it.
+  // 5) DOWNSCALE (nearest, hard pixels) → JPEG → UPSCALE (nearest, blocky).
+  //    Using nearest in BOTH directions is what makes the JPEG blocks
+  //    visible as chunky pixel patches in the final image. Lanczos would
+  //    smooth them away.
   buf = await sharp(buf)
-    .resize(ds1W, ds1H, { kernel: 'lanczos3' })
+    .resize(ds1W, ds1H, { kernel: 'nearest' })
     .jpeg({ quality: q1, chromaSubsampling: '4:2:0' })
     .toBuffer();
   buf = await sharp(buf).resize(W, H, { kernel: 'nearest' }).toBuffer();
@@ -713,21 +722,29 @@ async function deepfryImage(input: Buffer, intensity: number): Promise<Buffer> {
     .modulate({ saturation: sat2 })
     .sharpen({ sigma: sharp2, m1: 4, m2: 4 })
     .toBuffer();
-  // 7) Even more aggressive downscale → JPEG → upscale. This pass adds
-  //    the second layer of block grain at a different scale, creating the
-  //    overlapping artifact pattern that gives "real deepfry" its texture.
+  // 7) Second downscale → JPEG → upscale, harder. Different scale than
+  //    pass 5 so the block grids don't align — overlapping grids at
+  //    different sizes is the texture of real deepfry.
   buf = await sharp(buf)
-    .resize(ds2W, ds2H, { kernel: 'lanczos3' })
+    .resize(ds2W, ds2H, { kernel: 'nearest' })
     .jpeg({ quality: q2, chromaSubsampling: '4:2:0' })
     .toBuffer();
   buf = await sharp(buf).resize(W, H, { kernel: 'nearest' }).toBuffer();
-  // 8) Bloom — blur a copy, screen-blend over original. Bright regions
+  // 8) Third downscale → JPEG → upscale at a slightly larger fraction.
+  //    This third pass adds yet another grid alignment so the artifact
+  //    field looks chaotic rather than uniformly scaled.
+  buf = await sharp(buf)
+    .resize(ds3W, ds3H, { kernel: 'nearest' })
+    .jpeg({ quality: q1, chromaSubsampling: '4:2:0' })
+    .toBuffer();
+  buf = await sharp(buf).resize(W, H, { kernel: 'nearest' }).toBuffer();
+  // 9) Bloom — blur a copy, screen-blend over original. Bright regions
   //    (lasers, highlights) bleed glow outward.
   const blurred = await sharp(buf).blur(blurAmt).toBuffer();
   buf = await sharp(buf).composite([{ input: blurred, blend: 'screen' }]).toBuffer();
-  // 9) Final saturation/brightness top-up + midtone darken (gamma > 1).
+  // 10) Final saturation/brightness top-up + midtone darken (gamma > 1).
   buf = await sharp(buf).modulate({ saturation: sat3, brightness: bright3 }).gamma(gam).toBuffer();
-  // 10) Final JPEG round-trip at native resolution to bake everything in.
+  // 11) Final JPEG round-trip at native resolution to bake everything in.
   buf = await sharp(buf).jpeg({ quality: q3, chromaSubsampling: '4:2:0' }).toBuffer();
   return sharp(buf).png().toBuffer();
 }
