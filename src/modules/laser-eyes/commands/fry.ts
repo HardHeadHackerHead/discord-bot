@@ -79,8 +79,11 @@ export const command: SlashCommand = {
     // Resolve source image. Priority:
     //   1. `image` attachment (explicit)
     //   2. `user` option → that user's avatar
-    //   3. Most recent image posted by the invoker in this channel
-    //   4. Invoker's own avatar
+    //   3. Most recent image posted in this channel by ANY author
+    //
+    // No fallback to the invoker's avatar — if there's nothing to fry, we
+    // tell the user explicitly. This lets people just drop an image in the
+    // channel and run /fry without any params.
     let sourceUrl: string;
     let label: string;
 
@@ -98,15 +101,19 @@ export const command: SlashCommand = {
       sourceUrl = targetUser.displayAvatarURL({ extension: 'png', size: 1024, forceStatic: true });
       label = `<@${targetUser.id}>'s avatar`;
     } else {
-      const recent = await findRecentImageFromUser(interaction);
-      if (recent) {
-        sourceUrl = recent.url;
-        label = 'your recent image';
-        logger.debug(`using recent channel image from message ${recent.messageId}`);
-      } else {
-        sourceUrl = interaction.user.displayAvatarURL({ extension: 'png', size: 1024, forceStatic: true });
-        label = 'your avatar';
+      const recent = await findRecentChannelImage(interaction);
+      if (!recent) {
+        await interaction.reply({
+          content: '❌ No recent image found in this channel. Drop an image first, or pass `image:` / `user:` to `/fry`.',
+          ephemeral: true,
+        });
+        return;
       }
+      sourceUrl = recent.url;
+      label = recent.authorId === interaction.user.id
+        ? 'your recent image'
+        : `<@${recent.authorId}>'s recent image`;
+      logger.debug(`using recent channel image from message ${recent.messageId} by ${recent.authorId}`);
     }
 
     await interaction.deferReply();
@@ -165,17 +172,17 @@ function isImageAttachment(a: Attachment): boolean {
   );
 }
 
-const RECENT_IMAGE_LOOKBACK_COUNT = 15;
-const RECENT_IMAGE_MAX_AGE_MS = 5 * 60 * 1000;
+const RECENT_IMAGE_LOOKBACK_COUNT = 50;
 
 /**
  * Look back through recent channel messages for the most recent image
- * attachment posted by the invoking user. Returns the URL + source message ID,
- * or null if nothing usable is found.
+ * attachment from any author (including bots). Returns URL, source message
+ * ID, and original author ID, or null if nothing usable is found in the
+ * last RECENT_IMAGE_LOOKBACK_COUNT messages.
  */
-async function findRecentImageFromUser(
+async function findRecentChannelImage(
   interaction: ChatInputCommandInteraction
-): Promise<{ url: string; messageId: string } | null> {
+): Promise<{ url: string; messageId: string; authorId: string } | null> {
   const channel = interaction.channel;
   if (!channel || !channel.isTextBased()) return null;
 
@@ -187,16 +194,17 @@ async function findRecentImageFromUser(
     return null;
   }
 
-  const now = Date.now();
+  // Skip the bot's own previous /fry outputs — picking those up would mean
+  // re-frying our own fried image, an infinite-fry feedback loop.
+  const botUserId = interaction.client.user?.id;
   const sorted = [...messages.values()].sort((a, b) => b.createdTimestamp - a.createdTimestamp);
 
   for (const msg of sorted as Message[]) {
-    if (msg.author.id !== interaction.user.id) continue;
-    if (now - msg.createdTimestamp > RECENT_IMAGE_MAX_AGE_MS) continue;
+    if (msg.author.id === botUserId) continue;
 
     const img = msg.attachments.find(isImageAttachment);
     if (img) {
-      return { url: img.url, messageId: msg.id };
+      return { url: img.url, messageId: msg.id, authorId: msg.author.id };
     }
   }
 

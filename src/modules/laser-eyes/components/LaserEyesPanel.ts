@@ -51,33 +51,39 @@ export class LaserEyesPanel {
   /**
    * Build the action rows of select menus for the panel. Selects are
    * pre-populated with the user's current choices so the UI reflects state.
+   * The color row is omitted when no eyes were detected — picking a glow
+   * color is meaningless if there are no lasers to color.
    */
   static buildComponents(state: LaserEyesPanelState): ActionRowBuilder<StringSelectMenuBuilder>[] {
-    // Color select — preset names + "random". A pre-applied #hex from a
-    // command parameter shows up as a pseudo option that always resolves.
-    const colorOptions: StringSelectMenuOptionBuilder[] = [];
+    const rows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
 
-    colorOptions.push(
-      new StringSelectMenuOptionBuilder()
-        .setLabel('🎲 Random')
-        .setValue(COLOR_RANDOM_VALUE)
-        .setDescription('Pick a random preset each time')
-        .setDefault(state.colorChoice === COLOR_RANDOM_VALUE)
-    );
+    if (state.eyesDetected) {
+      const colorOptions: StringSelectMenuOptionBuilder[] = [];
 
-    for (const name of Object.keys(GLOW_COLORS) as (keyof typeof GLOW_COLORS)[]) {
       colorOptions.push(
         new StringSelectMenuOptionBuilder()
-          .setLabel(name.charAt(0).toUpperCase() + name.slice(1))
-          .setValue(name)
-          .setDefault(state.colorChoice === name)
+          .setLabel('🎲 Random')
+          .setValue(COLOR_RANDOM_VALUE)
+          .setDescription('Pick a random preset each time')
+          .setDefault(state.colorChoice === COLOR_RANDOM_VALUE)
       );
-    }
 
-    const colorSelect = new StringSelectMenuBuilder()
-      .setCustomId('lasereyes:color')
-      .setPlaceholder('Glow color')
-      .addOptions(colorOptions);
+      for (const name of Object.keys(GLOW_COLORS) as (keyof typeof GLOW_COLORS)[]) {
+        colorOptions.push(
+          new StringSelectMenuOptionBuilder()
+            .setLabel(name.charAt(0).toUpperCase() + name.slice(1))
+            .setValue(name)
+            .setDefault(state.colorChoice === name)
+        );
+      }
+
+      const colorSelect = new StringSelectMenuBuilder()
+        .setCustomId('lasereyes:color')
+        .setPlaceholder('Glow color')
+        .addOptions(colorOptions);
+
+      rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(colorSelect));
+    }
 
     const fryOptions = FRY_LEVELS.map(level =>
       new StringSelectMenuOptionBuilder()
@@ -94,10 +100,9 @@ export class LaserEyesPanel {
       )
       .addOptions(fryOptions);
 
-    return [
-      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(colorSelect),
-      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(frySelect),
-    ];
+    rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(frySelect));
+
+    return rows;
   }
 
   /** Render the message content line that goes above the image. */
