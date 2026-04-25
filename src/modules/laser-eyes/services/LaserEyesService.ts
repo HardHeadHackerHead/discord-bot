@@ -616,42 +616,77 @@ export class LaserEyesService {
 }
 
 /**
- * Apply the classic "deepfried meme" aesthetic to an image: blown-out
- * saturation, crushing contrast, warm tint, aggressive sharpening, and JPEG
- * compression artifacts. The pipeline is intentionally cumulative — each
- * step makes the image worse in a delicious way.
+ * Apply the proper deepfried-meme aesthetic. The goal isn't to wash the image
+ * in one color — it's chromatic chaos: every original hue gets pushed to its
+ * saturated extreme, blacks crush, highlights bloom, edges grow halos, and
+ * JPEG artifacts compound from being re-encoded multiple times. The image
+ * should still read as the original subject, just brutalized.
+ *
+ * Pipeline order matters: sharpen BEFORE the JPEG round-trips so the
+ * compression mangles the over-sharpened edges into the gnarly halos that
+ * are the signature of a real deepfried image.
  */
 async function deepfryImage(input: Buffer): Promise<Buffer> {
-  // 1) Boost saturation way past natural, crank brightness slightly. Sharp's
-  //    .modulate() multiplies saturation; 3.0 is "you can't even tell what
-  //    color this used to be" territory.
-  const stage1 = await sharp(input)
-    .modulate({ saturation: 3.0, brightness: 1.08 })
+  // 1) Detonate saturation while leaving HUE intact. modulate({saturation})
+  //    multiplies S in HSL space — every original color stays itself, just
+  //    cranked. NO uniform color tint here; that would erase the chaos.
+  let buf = await sharp(input)
+    .modulate({ saturation: 2.8, brightness: 1.05 })
     .toBuffer();
 
-  // 2) Apply a strong contrast curve via .linear(multiplier, offset). The
-  //    multiplier > 1 increases contrast, the negative offset pulls down
-  //    midtones so highlights pop hard.
-  const stage2 = await sharp(stage1)
-    .linear(1.6, -30)
+  // 2) Crush contrast hard. Highlights blow out, shadows clip to black.
+  buf = await sharp(buf).linear(1.8, -40).toBuffer();
+
+  // 3) Asymmetric warm shift via per-channel linear scaling (NOT a tint).
+  //    Bumping red and slightly cutting blue gives the warm cast deepfried
+  //    images have, but it preserves the saturated greens/blues elsewhere
+  //    instead of washing everything orange.
+  buf = await sharp(buf)
+    .linear([1.18, 1.05, 0.88], [4, 0, -8])
     .toBuffer();
 
-  // 3) Warm orange-yellow tint — the canonical deepfry color cast.
-  const stage3 = await sharp(stage2)
-    .tint('#ffb060')
+  // 4) Bloom: blur a copy, screen-blend it back over the original. Bright
+  //    regions leak glow outward — the halation you see around any bright
+  //    pixel in a fried image. Sharp's "screen" blend brightens where the
+  //    blurred copy is bright, leaves dark areas untouched.
+  const blurred = await sharp(buf).blur(8).toBuffer();
+  buf = await sharp(buf)
+    .composite([{ input: blurred, blend: 'screen' }])
     .toBuffer();
 
-  // 4) Aggressive sharpening — adds the gritty over-edged look. Large sigma,
-  //    high m1/m2 values that would be insane for a real photo edit.
-  const stage4 = await sharp(stage3)
-    .sharpen({ sigma: 3, m1: 4, m2: 4 })
+  // 5) First sharpen pass — over-edged, halo-inducing. Done BEFORE JPEG so
+  //    the compression artifacts ring around our sharpened edges.
+  buf = await sharp(buf).sharpen({ sigma: 2.5, m1: 4, m2: 4 }).toBuffer();
+
+  // 6) JPEG round-trip #1 — quality 10, 4:2:0 chroma subsampling. The first
+  //    pass introduces blocking and chroma bleeding.
+  buf = await sharp(buf).jpeg({ quality: 10, chromaSubsampling: '4:2:0' }).toBuffer();
+
+  // 7) Re-saturate — JPEG dulls saturation, so we kick it back up before the
+  //    next compression pass to keep the screaming-color look.
+  buf = await sharp(buf).modulate({ saturation: 1.8 }).toBuffer();
+
+  // 8) Second sharpen pass — sharpens THE ARTIFACTS from pass 6, doubling
+  //    down on the gritty over-processed look.
+  buf = await sharp(buf).sharpen({ sigma: 1.8, m1: 3, m2: 3 }).toBuffer();
+
+  // 9) JPEG round-trip #2 — even lower quality. Each round adds more banding
+  //    and 8x8 block boundaries that are visible in flat regions.
+  buf = await sharp(buf).jpeg({ quality: 7, chromaSubsampling: '4:2:0' }).toBuffer();
+
+  // 10) Final exposure crank + saturation top-up + slight gamma toward
+  //     darker midtones (gamma > 1 pushes mids down → looks posterized when
+  //     combined with the JPEG banding). Sharp's gamma range is 1.0-3.0.
+  buf = await sharp(buf)
+    .modulate({ saturation: 1.4, brightness: 1.04 })
+    .gamma(1.2)
     .toBuffer();
 
-  // 5) JPEG compression artifacts — round-trip through low-quality JPEG to
-  //    bake in the blocking, ringing, and color-banding deepfry hallmarks.
-  //    Then re-encode to PNG so callers get a consistent format back.
-  const jpeg = await sharp(stage4).jpeg({ quality: 12, chromaSubsampling: '4:2:0' }).toBuffer();
-  return sharp(jpeg).png().toBuffer();
+  // 11) Final JPEG round-trip #3 to bake in the new edits, then back to PNG
+  //     for the caller. Three rounds total is where the artifacts become
+  //     unmistakable without losing what the image actually depicts.
+  buf = await sharp(buf).jpeg({ quality: 8, chromaSubsampling: '4:2:0' }).toBuffer();
+  return sharp(buf).png().toBuffer();
 }
 
 async function ensurePlaceholderLaser(): Promise<void> {
