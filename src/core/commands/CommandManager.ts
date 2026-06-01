@@ -232,8 +232,15 @@ export class CommandManager {
     // grants (e.g. dynamic-lab giving owners ManageChannels on their lab) leak into command gates.
     if (command.permissions) {
       const member = interaction.member as GuildMember | null;
+      if (!member) {
+        await interaction.reply({
+          embeds: [errorEmbed('Error', 'Could not verify permissions.')],
+          ephemeral: true,
+        });
+        return;
+      }
       const missing = command.permissions.filter(
-        perm => !member?.permissions.has(perm)
+        perm => !member.permissions.has(perm)
       );
 
       if (missing.length > 0) {
