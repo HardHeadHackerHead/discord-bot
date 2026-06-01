@@ -91,6 +91,7 @@ src/modules/*/
 !src/modules/laser-eyes/
 
 # --- Tier 3: Private ---
+!src/modules/strava/
 !src/modules/gambling/
 !src/modules/voice-ai/
 !src/modules/meeting/
