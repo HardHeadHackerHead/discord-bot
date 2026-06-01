@@ -1,11 +1,8 @@
 import { spawn } from 'child_process';
 import { writeFile, unlink, mkdir, stat } from 'fs/promises';
-import { createWriteStream, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { pathToFileURL } from 'url';
-import { pipeline } from 'stream/promises';
-import { Readable } from 'stream';
 import { Logger } from '../../../shared/utils/logger.js';
 import type { CreditsData } from './CreditsService.js';
 import type { GrowthStats } from './GrowthDataService.js';
@@ -136,60 +133,45 @@ export class RenderService {
   }
 
   /**
-   * Download YouTube thumbnails to local temp files so Remotion can render them.
-   * Returns a copy of YouTubeData with URLs replaced by local file:// paths.
+   * Download YouTube thumbnails and inline them as base64 data URLs so
+   * Remotion's headless Chromium can render them without hitting the
+   * "Not allowed to load local resource" file:// restriction.
    */
   private async localizeYouTubeData(
     ytData: YouTubeData,
-    guildId: string
+    _guildId: string
   ): Promise<YouTubeData> {
-    const thumbDir = join(this.tempDir, `yt-thumbs-${guildId}`);
-    await mkdir(thumbDir, { recursive: true });
-
     const localized: YouTubeData = {
       channel: { ...ytData.channel },
       recentVideos: ytData.recentVideos.map((v) => ({ ...v })),
     };
 
-    // Download channel thumbnail
     if (localized.channel.channelThumbnail) {
-      const localPath = await this.downloadImage(
-        localized.channel.channelThumbnail,
-        join(thumbDir, 'channel.jpg')
-      );
-      localized.channel.channelThumbnail = localPath;
+      const dataUrl = await this.fetchImageAsDataUrl(localized.channel.channelThumbnail);
+      localized.channel.channelThumbnail = dataUrl;
     }
 
-    // Download video thumbnails
     for (let i = 0; i < localized.recentVideos.length; i++) {
       const video = localized.recentVideos[i]!;
       if (video.thumbnailUrl) {
-        const localPath = await this.downloadImage(
-          video.thumbnailUrl,
-          join(thumbDir, `video-${i}.jpg`)
-        );
-        video.thumbnailUrl = localPath;
+        const dataUrl = await this.fetchImageAsDataUrl(video.thumbnailUrl);
+        video.thumbnailUrl = dataUrl;
       }
     }
 
     return localized;
   }
 
-  private async downloadImage(
-    url: string,
-    destPath: string
-  ): Promise<string | null> {
+  private async fetchImageAsDataUrl(url: string): Promise<string | null> {
     try {
       const res = await fetch(url);
-      if (!res.ok || !res.body) {
+      if (!res.ok) {
         logger.warn(`Failed to download image ${url}: ${res.status}`);
         return null;
       }
-
-      const nodeStream = Readable.fromWeb(res.body as any);
-      await pipeline(nodeStream, createWriteStream(destPath));
-      // Return file:// URL so Remotion's headless browser can load it
-      return pathToFileURL(destPath).href;
+      const contentType = res.headers.get('content-type') || 'image/jpeg';
+      const buf = Buffer.from(await res.arrayBuffer());
+      return `data:${contentType};base64,${buf.toString('base64')}`;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
       logger.warn(`Failed to download image ${url}: ${msg}`);

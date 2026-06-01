@@ -234,7 +234,7 @@ export class BoosterPerksPanel {
 
     const urlInput = new TextInputBuilder()
       .setCustomId('boosterperks:input_url')
-      .setLabel('Sound URL (.mp3, .wav, or .ogg)')
+      .setLabel('Sound URL (.mp3, .wav, .ogg, or .m4a)')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
       .setPlaceholder('https://example.com/sound.mp3');

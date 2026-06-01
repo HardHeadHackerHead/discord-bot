@@ -2,7 +2,7 @@
  * Booster Perks Module - Exclusive features for server boosters
  *
  * Features:
- * - Custom soundboard sounds from URLs (.mp3, .wav, .ogg)
+ * - Custom soundboard sounds from URLs (.mp3, .wav, .ogg, .m4a)
  * - Custom emojis from URLs (.png, .jpg, .gif, .webp)
  * - Configurable per-user limits for each perk type
  * - Interactive panel-driven management (no subcommands needed)

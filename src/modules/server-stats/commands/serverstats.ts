@@ -4,6 +4,7 @@ import {
   PermissionFlagsBits,
   ChannelType,
   EmbedBuilder,
+  GuildMember,
   VoiceChannel,
 } from 'discord.js';
 import { SlashCommand } from '../../../types/command.types.js';
@@ -95,6 +96,23 @@ export const command: SlashCommand = {
     if (!statsService) {
       await interaction.reply({
         content: '❌ Server Stats service is not initialized.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Discord enforces `setDefaultMemberPermissions` using channel-context perms (which include
+    // channel overrides). Per-channel ManageChannels grants — like the one the dynamic-lab module
+    // gives lab owners on their own lab channel — would let those owners through. Re-validate
+    // against base guild perms here.
+    const member = interaction.member as GuildMember | null;
+    if (!member?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setDescription('❌ You need the "Manage Channels" permission (server-wide) to use this command.')
+            .setColor(0xED4245),
+        ],
         ephemeral: true,
       });
       return;

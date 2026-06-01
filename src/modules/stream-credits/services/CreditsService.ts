@@ -65,7 +65,7 @@ export class CreditsService {
         userId: member.id,
         username: member.user.username,
         displayName: member.displayName,
-        avatarUrl: member.displayAvatarURL({ size: 256, extension: 'png' }),
+        avatarUrl: member.displayAvatarURL({ size: 256, extension: 'png', forceStatic: true }),
         isBooster,
         isTagWearer,
         serverTag: this.getServerTag(member),
@@ -93,7 +93,7 @@ export class CreditsService {
 
     return {
       guildName: guild.name,
-      guildIconUrl: guild.iconURL({ size: 256, extension: 'png' }),
+      guildIconUrl: guild.iconURL({ size: 256, extension: 'png', forceStatic: true }),
       boosters,
       tagWearers,
       combined,

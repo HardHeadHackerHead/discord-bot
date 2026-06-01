@@ -3,6 +3,7 @@ import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,
   ChannelType,
+  GuildMember,
   TextChannel,
 } from 'discord.js';
 import { SlashCommand } from '../../../types/command.types.js';
@@ -97,6 +98,21 @@ export const command: SlashCommand = {
     if (!pollsService) {
       await interaction.reply({
         content: 'Polls service is not available.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Re-validate against base guild perms — `setDefaultMemberPermissions` is enforced by Discord
+    // using channel-effective perms, so per-channel ManageMessages overrides (e.g. the humor-
+    // competition trusted role on its forum) would otherwise let those users open the gate.
+    const member = interaction.member as GuildMember | null;
+    if (!member?.permissions.has(PermissionFlagsBits.ManageMessages)) {
+      await interaction.reply({
+        embeds: [PollsPanel.createErrorEmbed(
+          'Permission Denied',
+          'You need the "Manage Messages" permission (server-wide) to use this command.'
+        )],
         ephemeral: true,
       });
       return;

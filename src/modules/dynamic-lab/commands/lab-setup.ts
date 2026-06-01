@@ -3,6 +3,7 @@ import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,
   ChannelType,
+  GuildMember,
   VoiceChannel,
   EmbedBuilder,
 } from 'discord.js';
@@ -129,8 +130,11 @@ export const command: SlashCommand = {
 
     // Handle admin commands
     if (subcommandGroup === 'admin') {
-      // Check permissions for admin commands
-      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) {
+      // Check permissions for admin commands. Use base guild perms — `interaction.memberPermissions`
+      // includes channel overrides, which would let lab owners pass this gate from inside their own
+      // lab (the lab create flow grants per-channel ManageChannels to the owner).
+      const member = interaction.member as GuildMember | null;
+      if (!member?.permissions.has(PermissionFlagsBits.ManageChannels)) {
         await interaction.reply({
           embeds: [
             new EmbedBuilder()

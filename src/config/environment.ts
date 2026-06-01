@@ -20,6 +20,15 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
 
+  // Strava integration — connection to quadslab.io's Postgres so we
+  // can LISTEN strava_activity and read event rows. Read-only role is
+  // sufficient. Unset = Strava module loads with commands only and
+  // activity posting is disabled (a soft degradation, not a hard fail).
+  WEBSITE_DATABASE_URL: z.string().url().optional(),
+  // Public URL of quadslab.io — used by /strava link to DM the right
+  // OAuth-start URL. Defaults to production if unset.
+  WEBSITE_URL: z.string().url().optional(),
+
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });

@@ -2,6 +2,7 @@ import { Guild, GuildMember } from 'discord.js';
 import { DatabaseService, RowDataPacket } from '../../../core/database/postgres.js';
 import { Logger } from '../../../shared/utils/logger.js';
 import { randomUUID } from 'crypto';
+import { spawn } from 'child_process';
 
 const logger = new Logger('BoosterPerks:Service');
 
@@ -18,7 +19,7 @@ export interface BoosterAsset {
   created_at: Date;
 }
 
-const ALLOWED_SOUND_EXTENSIONS = ['.mp3', '.wav', '.ogg'];
+const ALLOWED_SOUND_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.m4a'];
 const ALLOWED_EMOJI_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 const MAX_SOUND_SIZE = 512 * 1024; // 512KB - Discord soundboard limit
 const MAX_EMOJI_SIZE = 256 * 1024; // 256KB - Discord emoji limit
@@ -108,6 +109,17 @@ export class BoosterPerksService {
     const allowedExtensions = type === 'sound' ? ALLOWED_SOUND_EXTENSIONS : ALLOWED_EMOJI_EXTENSIONS;
     const maxSize = type === 'sound' ? MAX_SOUND_SIZE : MAX_EMOJI_SIZE;
 
+    // Validate URL has a scheme/host before handing to fetch
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      throw new Error('Invalid URL. Paste a full link starting with https://');
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error('URL must use http:// or https://');
+    }
+
     // Validate URL extension
     const urlLower = (url.toLowerCase().split('?')[0] ?? '');
     const hasValidExtension = allowedExtensions.some(ext => urlLower.endsWith(ext));
@@ -129,14 +141,19 @@ export class BoosterPerksService {
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    if (buffer.length > maxSize) {
-      throw new Error(`File too large (${Math.round(buffer.length / 1024)}KB). Maximum: ${maxSize / 1024}KB`);
-    }
+    let buffer: Buffer = Buffer.from(arrayBuffer);
 
     if (buffer.length === 0) {
       throw new Error('Downloaded file is empty');
+    }
+
+    // Discord soundboard rejects audio/mp4 — transcode M4A to MP3 before upload
+    if (type === 'sound' && urlLower.endsWith('.m4a')) {
+      buffer = await transcodeToMp3(buffer);
+    }
+
+    if (buffer.length > maxSize) {
+      throw new Error(`File too large (${Math.round(buffer.length / 1024)}KB). Maximum: ${maxSize / 1024}KB`);
     }
 
     return buffer;
@@ -158,6 +175,8 @@ export class BoosterPerksService {
       contentType = 'audio/mpeg'; // MP3 sync frame
     } else if (soundBuffer[0] === 0x52 && soundBuffer[1] === 0x49 && soundBuffer[2] === 0x46 && soundBuffer[3] === 0x46) {
       contentType = 'audio/wav'; // RIFF/WAV
+    } else if (soundBuffer[4] === 0x66 && soundBuffer[5] === 0x74 && soundBuffer[6] === 0x79 && soundBuffer[7] === 0x70) {
+      contentType = 'audio/mp4'; // ISO BMFF "ftyp" box — M4A/MP4 audio
     }
 
     const sound = await guild.soundboardSounds.create({
@@ -196,4 +215,34 @@ export class BoosterPerksService {
     await guild.emojis.delete(emojiId);
     logger.info(`Deleted emoji ${emojiId} from guild ${guild.id}`);
   }
+}
+
+function transcodeToMp3(input: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const ff = spawn('ffmpeg', [
+      '-loglevel', 'error',
+      '-i', 'pipe:0',
+      '-vn',
+      '-f', 'mp3',
+      '-b:a', '128k',
+      'pipe:1',
+    ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+    const stdoutChunks: Buffer[] = [];
+    let stderrText = '';
+
+    ff.stdout.on('data', (c: Buffer) => stdoutChunks.push(c));
+    ff.stderr.on('data', (c: Buffer) => { stderrText += c.toString(); });
+    ff.on('error', (err) => reject(new Error(`ffmpeg failed to start: ${err.message}`)));
+    ff.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`ffmpeg exited ${code}: ${stderrText.trim().slice(0, 300)}`));
+        return;
+      }
+      resolve(Buffer.concat(stdoutChunks));
+    });
+
+    ff.stdin.on('error', () => { /* ignored — surfaced via close */ });
+    ff.stdin.end(input);
+  });
 }

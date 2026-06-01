@@ -1,6 +1,7 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
+  GuildMember,
   PermissionFlagsBits,
 } from 'discord.js';
 import { defineSlashCommand } from '../../../types/command.types.js';
@@ -187,8 +188,10 @@ async function handleGive(
   service: PointsService,
   guildId: string
 ): Promise<void> {
-  // Check permissions
-  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+  // Check permissions against base guild perms (not channel-effective) so per-channel overrides
+  // can never elevate someone into an admin command.
+  const member = interaction.member as GuildMember | null;
+  if (!member?.permissions.has(PermissionFlagsBits.ManageGuild)) {
     await interaction.reply({
       embeds: [errorEmbed('Permission Denied', 'You need the Manage Server permission to give points')],
       ephemeral: true,
@@ -232,8 +235,8 @@ async function handleTake(
   service: PointsService,
   guildId: string
 ): Promise<void> {
-  // Check permissions
-  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+  const member = interaction.member as GuildMember | null;
+  if (!member?.permissions.has(PermissionFlagsBits.ManageGuild)) {
     await interaction.reply({
       embeds: [errorEmbed('Permission Denied', 'You need the Manage Server permission to take points')],
       ephemeral: true,
@@ -268,8 +271,8 @@ async function handleSet(
   service: PointsService,
   guildId: string
 ): Promise<void> {
-  // Check permissions
-  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+  const member = interaction.member as GuildMember | null;
+  if (!member?.permissions.has(PermissionFlagsBits.ManageGuild)) {
     await interaction.reply({
       embeds: [errorEmbed('Permission Denied', 'You need the Manage Server permission to set points')],
       ephemeral: true,

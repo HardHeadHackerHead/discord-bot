@@ -216,7 +216,7 @@ async function handleRender(interaction: ChatInputCommandInteraction): Promise<v
       newMembers.push({
         userId: member.id,
         displayName: member.displayName,
-        avatarUrl: member.displayAvatarURL({ size: 256, extension: 'png' }),
+        avatarUrl: member.displayAvatarURL({ size: 256, extension: 'png', forceStatic: true }),
         joinedAt: member.joinedAt.toISOString(),
       });
     }

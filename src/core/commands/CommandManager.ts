@@ -6,6 +6,7 @@ import {
   ChatInputCommandInteraction,
   AutocompleteInteraction,
   ContextMenuCommandInteraction,
+  GuildMember,
   Interaction,
   ApplicationCommandPermissionType,
 } from 'discord.js';
@@ -226,10 +227,13 @@ export class CommandManager {
       }
     }
 
-    // Check permissions
-    if (command.permissions && interaction.memberPermissions) {
+    // Check permissions against base guild perms (no channel overrides). Using
+    // `interaction.memberPermissions` would include channel overrides, which lets per-channel
+    // grants (e.g. dynamic-lab giving owners ManageChannels on their lab) leak into command gates.
+    if (command.permissions) {
+      const member = interaction.member as GuildMember | null;
       const missing = command.permissions.filter(
-        perm => !interaction.memberPermissions?.has(perm)
+        perm => !member?.permissions.has(perm)
       );
 
       if (missing.length > 0) {
