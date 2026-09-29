@@ -101,3 +101,4 @@ src/modules/*/
 !src/modules/test-recording/
 !src/modules/voice-join/
 !src/modules/deafen-sync/
+!src/modules/deafen-sync/migrations/*.sql
