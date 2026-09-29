@@ -274,6 +274,11 @@ export class ExtendedClient extends Client {
     stopCronService();
     logger.info('Cron service stopped');
 
+    // Stop auto-deploying commands as modules unload. During a Railway redeploy
+    // the old container shuts down after the new one has already deployed its
+    // commands, so re-deploying here would overwrite them with a stale list.
+    this._startupComplete = false;
+
     // Shutdown modules
     await this.modules.shutdown();
 
