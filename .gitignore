@@ -100,3 +100,4 @@ src/modules/*/
 !src/modules/ideas/
 !src/modules/test-recording/
 !src/modules/voice-join/
+!src/modules/deafen-sync/
