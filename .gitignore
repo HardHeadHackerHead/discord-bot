@@ -102,3 +102,5 @@ src/modules/*/
 !src/modules/voice-join/
 !src/modules/deafen-sync/
 !src/modules/deafen-sync/migrations/*.sql
+!src/modules/resets/
+!src/modules/resets/migrations/*.sql
