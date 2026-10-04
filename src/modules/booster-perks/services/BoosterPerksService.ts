@@ -42,6 +42,13 @@ export class BoosterPerksService {
     );
   }
 
+  async getGuildAssets(guildId: string, type: AssetType): Promise<BoosterAsset[]> {
+    return this.db.query<(BoosterAsset & RowDataPacket)[]>(
+      'SELECT * FROM boosterperks_assets WHERE guild_id = ? AND asset_type = ? ORDER BY user_id ASC, created_at ASC',
+      [guildId, type]
+    );
+  }
+
   async getUserAssetCount(guildId: string, userId: string, type: AssetType): Promise<number> {
     const rows = await this.db.query<({ count: number } & RowDataPacket)[]>(
       'SELECT COUNT(*) as count FROM boosterperks_assets WHERE guild_id = ? AND user_id = ? AND asset_type = ?',

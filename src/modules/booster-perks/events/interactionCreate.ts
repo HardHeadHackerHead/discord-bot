@@ -4,12 +4,14 @@ import {
   StringSelectMenuInteraction,
   ModalSubmitInteraction,
   GuildMember,
+  PermissionFlagsBits,
 } from 'discord.js';
 import { AnyModuleEvent } from '../../../types/event.types.js';
 import { BoosterPerksService, AssetType } from '../services/BoosterPerksService.js';
 import { BoosterPerksPanel } from '../components/BoosterPerksPanel.js';
 import { Logger } from '../../../shared/utils/logger.js';
 import { getSettings } from '../commands/booster.js';
+import { getExBoosterSoundGroups } from '../commands/booster-cleanup.js';
 import type { BoosterPerksSettings } from '../module.js';
 
 const logger = new Logger('BoosterPerks:Event');
@@ -18,6 +20,25 @@ let service: BoosterPerksService | null = null;
 
 export function setService(s: BoosterPerksService): void {
   service = s;
+}
+
+/**
+ * Pending cleanup selections, keyed by `${guildId}:${adminUserId}`. The select
+ * menu stashes the chosen user IDs here so the confirm button knows who to purge
+ * without hitting the 100-char customId limit. Entries expire after 5 minutes.
+ */
+const pendingCleanup = new Map<string, { userIds: string[]; expires: number }>();
+const CLEANUP_TTL_MS = 5 * 60 * 1000;
+
+function cleanupKey(guildId: string, userId: string): string {
+  return `${guildId}:${userId}`;
+}
+
+function pruneExpiredCleanup(): void {
+  const now = Date.now();
+  for (const [key, entry] of pendingCleanup) {
+    if (entry.expires <= now) pendingCleanup.delete(key);
+  }
 }
 
 function getMaxForType(settings: BoosterPerksSettings, type: AssetType): number {
@@ -43,8 +64,131 @@ export const interactionCreateEvent: AnyModuleEvent = {
     if (interaction.isModalSubmit() && interaction.customId.startsWith('boosterperks:')) {
       await handleModal(interaction);
     }
+
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('boostercleanup:')) {
+      await handleCleanupSelect(interaction);
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('boostercleanup:')) {
+      await handleCleanupButton(interaction);
+    }
   },
 };
+
+// ==================== Cleanup (admin) ====================
+
+function isCleanupAdmin(interaction: ButtonInteraction | StringSelectMenuInteraction): boolean {
+  const member = interaction.member as GuildMember | null;
+  return member?.permissions?.has(PermissionFlagsBits.ManageGuild) ?? false;
+}
+
+async function handleCleanupSelect(interaction: StringSelectMenuInteraction): Promise<void> {
+  if (interaction.customId !== 'boostercleanup:select') return;
+
+  if (!isCleanupAdmin(interaction)) {
+    await interaction.reply({
+      embeds: [BoosterPerksPanel.createErrorEmbed('No Permission', 'You need the **Manage Server** permission to do that.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const guild = interaction.guild!;
+  const selectedIds = interaction.values;
+
+  // Recompute so we only ever act on people who are genuinely still ex-boosters
+  const groups = await getExBoosterSoundGroups(guild, service!);
+  const selectedGroups = groups.filter((g) => selectedIds.includes(g.userId));
+
+  if (selectedGroups.length === 0) {
+    await interaction.update({
+      embeds: [BoosterPerksPanel.createCleanupEmptyEmbed()],
+      components: [],
+    });
+    return;
+  }
+
+  pruneExpiredCleanup();
+  pendingCleanup.set(cleanupKey(guild.id, interaction.user.id), {
+    userIds: selectedGroups.map((g) => g.userId),
+    expires: Date.now() + CLEANUP_TTL_MS,
+  });
+
+  await interaction.update({
+    embeds: [BoosterPerksPanel.createCleanupConfirmEmbed(selectedGroups)],
+    components: BoosterPerksPanel.createCleanupConfirmComponents(),
+  });
+}
+
+async function handleCleanupButton(interaction: ButtonInteraction): Promise<void> {
+  const action = interaction.customId.split(':')[1];
+
+  if (!isCleanupAdmin(interaction)) {
+    await interaction.reply({
+      embeds: [BoosterPerksPanel.createErrorEmbed('No Permission', 'You need the **Manage Server** permission to do that.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const guild = interaction.guild!;
+  const key = cleanupKey(guild.id, interaction.user.id);
+
+  if (action === 'cancel') {
+    pendingCleanup.delete(key);
+    await interaction.update({
+      embeds: [BoosterPerksPanel.createCleanupEmptyEmbed().setTitle('🧹 Cleanup Cancelled').setDescription('No sounds were deleted.')],
+      components: [],
+    });
+    return;
+  }
+
+  if (action !== 'confirm') return;
+
+  pruneExpiredCleanup();
+  const pending = pendingCleanup.get(key);
+  if (!pending) {
+    await interaction.update({
+      embeds: [BoosterPerksPanel.createErrorEmbed('Selection Expired', 'That selection expired. Run `/booster-cleanup` again.')],
+      components: [],
+    });
+    return;
+  }
+  pendingCleanup.delete(key);
+
+  await interaction.update({
+    embeds: [BoosterPerksPanel.createErrorEmbed('Working...', 'Deleting selected sounds, please wait...').setColor(0xF1C40F)],
+    components: [],
+  });
+
+  // Re-verify ex-booster status at delete time so a member who re-boosted is spared
+  const groups = await getExBoosterSoundGroups(guild, service!);
+  const selectedGroups = groups.filter((g) => pending.userIds.includes(g.userId));
+
+  let deletedCount = 0;
+  let failed = 0;
+  for (const group of selectedGroups) {
+    for (const asset of group.assets) {
+      try {
+        await service!.deleteSoundboardSound(guild, asset.asset_id);
+      } catch {
+        // Sound already gone from the server — still drop the tracking row
+        failed++;
+      }
+      await service!.removeAsset(asset.id);
+      deletedCount++;
+    }
+  }
+
+  logger.info(
+    `Cleanup by ${interaction.user.tag}: deleted ${deletedCount} sound(s) from ${selectedGroups.length} ex-booster(s) in guild ${guild.id}`
+  );
+
+  await interaction.editReply({
+    embeds: [BoosterPerksPanel.createCleanupResultEmbed(deletedCount, selectedGroups.length, failed)],
+    components: [],
+  });
+}
 
 async function handleButton(interaction: ButtonInteraction): Promise<void> {
   const parts = interaction.customId.split(':');

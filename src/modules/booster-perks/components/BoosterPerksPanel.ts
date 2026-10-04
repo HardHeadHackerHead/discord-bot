@@ -216,6 +216,119 @@ export class BoosterPerksPanel {
     ];
   }
 
+  // ==================== Cleanup (admin) ====================
+
+  static readonly CLEANUP_MAX_OPTIONS = 25;
+
+  static createCleanupEmbed(
+    groups: { userId: string; label: string; inGuild: boolean; assets: BoosterAsset[] }[],
+    truncated: boolean,
+  ): EmbedBuilder {
+    const totalSounds = groups.reduce((sum, g) => sum + g.assets.length, 0);
+    const embed = new EmbedBuilder()
+      .setTitle('🧹 Booster Sound Cleanup')
+      .setColor(COLORS.warning)
+      .setFooter({
+        text: `${groups.length} former booster(s) • ${totalSounds} sound(s) total`,
+      });
+
+    const lines = groups.map((g) => {
+      const names = g.assets.map((a) => `\`${a.asset_name}\``).join(', ');
+      const who = g.inGuild ? `<@${g.userId}>` : `${g.label} \`(${g.userId})\``;
+      return `**${who}** — ${g.assets.length} sound(s): ${names}`;
+    });
+
+    embed.setDescription(
+      'These soundboard sounds belong to members who are **no longer boosting** the server.\n\n' +
+      lines.join('\n') +
+      (truncated
+        ? `\n\n⚠️ Only the first ${BoosterPerksPanel.CLEANUP_MAX_OPTIONS} people are shown. Run the command again after cleaning these up to see the rest.`
+        : '') +
+      '\n\nSelect the people whose sounds you want to delete. Anyone you leave unselected is spared.'
+    );
+
+    return embed;
+  }
+
+  static createCleanupComponents(
+    groups: { userId: string; label: string; assets: BoosterAsset[] }[],
+  ): ActionRowBuilder<StringSelectMenuBuilder>[] {
+    const options = groups.slice(0, BoosterPerksPanel.CLEANUP_MAX_OPTIONS).map((g) =>
+      new StringSelectMenuOptionBuilder()
+        .setLabel(g.label.slice(0, 100))
+        .setDescription(`${g.assets.length} sound(s) • ${g.userId}`.slice(0, 100))
+        .setValue(g.userId)
+    );
+
+    const select = new StringSelectMenuBuilder()
+      .setCustomId('boostercleanup:select')
+      .setPlaceholder('Select the people to delete sounds for...')
+      .setMinValues(1)
+      .setMaxValues(options.length)
+      .addOptions(options);
+
+    return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select)];
+  }
+
+  static createCleanupConfirmEmbed(
+    groups: { userId: string; label: string; inGuild: boolean; assets: BoosterAsset[] }[],
+  ): EmbedBuilder {
+    const totalSounds = groups.reduce((sum, g) => sum + g.assets.length, 0);
+    const lines = groups.map((g) => {
+      const who = g.inGuild ? `<@${g.userId}>` : `${g.label} \`(${g.userId})\``;
+      return `**${who}** — ${g.assets.length} sound(s)`;
+    });
+
+    return new EmbedBuilder()
+      .setTitle('⚠️ Confirm Sound Cleanup')
+      .setColor(COLORS.error)
+      .setDescription(
+        `You're about to permanently delete **${totalSounds} sound(s)** from **${groups.length} person(s)**:\n\n` +
+        lines.join('\n') +
+        '\n\nThis removes them from the server soundboard and cannot be undone.'
+      );
+  }
+
+  static createCleanupConfirmComponents(): ActionRowBuilder<ButtonBuilder>[] {
+    return [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('boostercleanup:confirm')
+          .setLabel('Delete Selected')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId('boostercleanup:cancel')
+          .setLabel('Cancel')
+          .setStyle(ButtonStyle.Secondary),
+      ),
+    ];
+  }
+
+  static createCleanupEmptyEmbed(): EmbedBuilder {
+    return new EmbedBuilder()
+      .setTitle('🧹 Booster Sound Cleanup')
+      .setColor(COLORS.success)
+      .setDescription('All tracked soundboard sounds belong to current boosters. Nothing to clean up! 🎉');
+  }
+
+  static createCleanupResultEmbed(deletedCount: number, userCount: number, failed: number): EmbedBuilder {
+    const embed = new EmbedBuilder()
+      .setTitle('🧹 Cleanup Complete')
+      .setColor(COLORS.success)
+      .setDescription(
+        `Deleted **${deletedCount} sound(s)** from **${userCount} person(s)**.`
+      );
+
+    if (failed > 0) {
+      embed.addFields({
+        name: '⚠️ Note',
+        value: `${failed} sound(s) were already gone from the server soundboard and were only removed from tracking.`,
+      });
+    }
+
+    return embed;
+  }
+
   // ==================== Modals ====================
 
   static createSoundUploadModal(): ModalBuilder {

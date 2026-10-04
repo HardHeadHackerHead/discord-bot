@@ -1,5 +1,6 @@
 import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.types.js';
 import { command as boosterCommand, setService as setCommandService } from './commands/booster.js';
+import { command as boosterCleanupCommand, setService as setCleanupCommandService } from './commands/booster-cleanup.js';
 import { interactionCreateEvent, setService as setEventService } from './events/interactionCreate.js';
 import { BoosterPerksService } from './services/BoosterPerksService.js';
 import { DatabaseService } from '../../core/database/postgres.js';
@@ -72,7 +73,7 @@ export class BoosterPerksModule extends BaseModule {
 
   constructor() {
     super();
-    this.commands = [boosterCommand];
+    this.commands = [boosterCommand, boosterCleanupCommand];
     this.events = [interactionCreateEvent];
   }
 
@@ -91,6 +92,7 @@ export class BoosterPerksModule extends BaseModule {
 
     // Inject service into commands and events
     setCommandService(this.service);
+    setCleanupCommandService(this.service);
     setEventService(this.service);
 
     logger.info('Booster Perks module loaded');
