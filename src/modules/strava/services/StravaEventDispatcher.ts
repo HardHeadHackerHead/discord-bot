@@ -1,4 +1,4 @@
-import { Client, ChannelType } from 'discord.js';
+import { Client, ChannelType, type Guild, type EmbedBuilder } from 'discord.js';
 import { Logger } from '../../../shared/utils/logger.js';
 import type { StravaService } from './StravaService.js';
 import type { StravaListenService, ListenHandler } from './StravaListenService.js';
@@ -139,13 +139,13 @@ export class StravaEventDispatcher implements ListenHandler {
       if (!guild) {
         // Bot not in this guild anymore; record a "skipped" row so we
         // don't keep re-trying on reconnect catch-ups.
-        await this.bot.tryRecordDispatch(eventId, ch.guild_id, null, null);
+        await this.bot.tryRecordDispatch(eventId, ch.guild_id, null, null, event.stravaActivityId);
         continue;
       }
 
       const isMember = await this.isGuildMember(guild.id, event.discordId);
       if (!isMember) {
-        await this.bot.tryRecordDispatch(eventId, ch.guild_id, null, null);
+        await this.bot.tryRecordDispatch(eventId, ch.guild_id, null, null, event.stravaActivityId);
         continue;
       }
 
@@ -154,7 +154,7 @@ export class StravaEventDispatcher implements ListenHandler {
         logger.warn(
           `Configured channel ${ch.channel_id} in guild ${ch.guild_id} is missing or not a text channel`,
         );
-        await this.bot.tryRecordDispatch(eventId, ch.guild_id, null, null);
+        await this.bot.tryRecordDispatch(eventId, ch.guild_id, null, null, event.stravaActivityId);
         continue;
       }
 
@@ -165,12 +165,62 @@ export class StravaEventDispatcher implements ListenHandler {
           privacy,
           `<@${event.discordId}>`,
         );
+
+        // If we already posted a message for THIS activity in this guild
+        // — e.g. the original `create`, and this is a follow-up `update`
+        // (renamed activity, added photo, corrected stats) — edit that
+        // message in place instead of posting a duplicate. `force`
+        // (/strava replay) intentionally always posts a fresh message.
+        //
+        // This lookup is only an optimization: if it fails (e.g. the
+        // dedup migration hasn't landed on this DB yet), we must still
+        // fall through and POST rather than swallow the activity.
+        let prior: Awaited<ReturnType<typeof this.bot.findActivityMessage>> = null;
+        if (!opts.force) {
+          try {
+            prior = await this.bot.findActivityMessage(event.stravaActivityId, ch.guild_id);
+          } catch (err) {
+            logger.error(
+              `findActivityMessage failed for activity ${event.stravaActivityId} in guild ${ch.guild_id}; posting without edit-dedup:`,
+              err,
+            );
+          }
+        }
+
+        if (prior?.channel_id && prior.message_id) {
+          const edited = await this.tryEditMessage(
+            guild,
+            prior.channel_id,
+            prior.message_id,
+            embeds,
+          );
+          if (edited) {
+            await this.bot.tryRecordDispatch(
+              eventId,
+              ch.guild_id,
+              prior.channel_id,
+              prior.message_id,
+              event.stravaActivityId,
+            );
+            logger.info(
+              `edited event ${eventId} into existing message ${prior.message_id} → guild ${ch.guild_id} channel ${prior.channel_id} (activity ${event.stravaActivityId})`,
+            );
+            continue;
+          }
+          // The original message is gone (deleted, or channel changed
+          // type). Fall through and post a fresh one.
+          logger.warn(
+            `prior message ${prior.message_id} for activity ${event.stravaActivityId} in guild ${ch.guild_id} could not be edited; posting a new message`,
+          );
+        }
+
         const msg = await channel.send({ embeds });
         await this.bot.tryRecordDispatch(
           eventId,
           ch.guild_id,
           ch.channel_id,
           msg.id,
+          event.stravaActivityId,
         );
         logger.info(
           `posted event ${eventId} (${embeds.length} embed${embeds.length === 1 ? '' : 's'}) → guild ${ch.guild_id} channel ${ch.channel_id} message ${msg.id}`,
@@ -230,6 +280,31 @@ export class StravaEventDispatcher implements ListenHandler {
       [discordId],
     );
     return rows[0]?.id ?? null;
+  }
+
+  /**
+   * Edit a previously-posted activity message in place. Returns false if
+   * the message can't be edited (channel gone/not text, message deleted,
+   * missing permissions) so the caller can fall back to posting anew.
+   */
+  private async tryEditMessage(
+    guild: Guild,
+    channelId: string,
+    messageId: string,
+    embeds: EmbedBuilder[],
+  ): Promise<boolean> {
+    try {
+      const channel = guild.channels.cache.get(channelId);
+      if (!channel || channel.type !== ChannelType.GuildText) return false;
+      const msg = await channel.messages.fetch(messageId);
+      await msg.edit({ embeds });
+      return true;
+    } catch (err) {
+      logger.debug(
+        `edit of message ${messageId} in ${guild.id}/${channelId} failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return false;
+    }
   }
 
   private async isGuildMember(guildId: string, userId: string): Promise<boolean> {
