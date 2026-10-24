@@ -56,12 +56,12 @@ export async function stopBot(): Promise<void> {
  * Set up graceful shutdown handlers
  */
 function setupShutdownHandlers(): void {
-  const shutdown = async (signal: string) => {
+  const shutdown = async (signal: string, exitCode = 0) => {
     logger.info(`Received ${signal}, shutting down...`);
 
     try {
       await stopBot();
-      process.exit(0);
+      process.exit(exitCode);
     } catch (error) {
       logger.error('Error during shutdown:', error);
       process.exit(1);
@@ -75,7 +75,8 @@ function setupShutdownHandlers(): void {
   // Handle uncaught errors
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught exception:', error);
-    shutdown('uncaughtException');
+    // Non-zero so Railway's ON_FAILURE restart policy brings the bot back up
+    shutdown('uncaughtException', 1);
   });
 
   process.on('unhandledRejection', (reason) => {

@@ -1,5 +1,8 @@
 import pg from 'pg';
 import { parseDatabaseUrl } from '../../config/environment.js';
+import { Logger } from '../../shared/utils/logger.js';
+
+const logger = new Logger('Postgres');
 
 /**
  * Type alias for backward compatibility with mysql2 RowDataPacket.
@@ -94,6 +97,13 @@ class PostgresService {
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
         ssl: dbConfig.ssl ? { rejectUnauthorized: false } : undefined,
+      });
+
+      // An idle client losing its connection (e.g. a Postgres restart) emits
+      // 'error' on the pool; unhandled, that crashes the process. The pool
+      // discards the dead client and opens a new one on the next query.
+      PostgresService.pool.on('error', (error) => {
+        logger.warn('Idle Postgres client error (pool will reconnect):', error.message);
       });
     }
     return PostgresService.pool;
