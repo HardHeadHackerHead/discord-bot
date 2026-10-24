@@ -1,15 +1,10 @@
-import { BaseModule, ModuleMetadata, ModuleContext } from '../../types/module.types.js';
+import { BaseModule, ModuleMetadata } from '../../types/module.types.js';
 import { command as modulesCommand } from './commands/modules.js';
 import { command as reloadCommand } from './commands/reload.js';
 import { command as settingsCommand } from './commands/settings.js';
-import { command as linesCommand } from './commands/lines.js';
 import { command as clearCommand } from './commands/clear.js';
 import { command as summarizeCommand } from './commands/summarize.js';
 import { interactionCreateEvent } from './events/interactionCreate.js';
-import { initCodeStatsService } from './services/CodeStatsService.js';
-import { Logger } from '../../shared/utils/logger.js';
-
-const logger = new Logger('Admin');
 
 /**
  * Admin Module - Core administrative commands
@@ -27,7 +22,7 @@ export class AdminModule extends BaseModule {
     priority: 100,     // Load first
   };
 
-  // Migrations path for code stats table
+  // Migrations for the admin_code_stats table (now used by the code-stats module)
   readonly migrationsPath = './migrations';
 
   constructor() {
@@ -38,7 +33,6 @@ export class AdminModule extends BaseModule {
       modulesCommand,
       reloadCommand,
       settingsCommand,
-      linesCommand,
       clearCommand,
       summarizeCommand,
     ];
@@ -47,22 +41,5 @@ export class AdminModule extends BaseModule {
     this.events = [
       interactionCreateEvent,
     ];
-  }
-
-  async onLoad(context: ModuleContext): Promise<void> {
-    await super.onLoad(context);
-
-    // Initialize code stats service and record current stats
-    const codeStatsService = initCodeStatsService(context.db);
-
-    // Record stats on bot load (will skip if unchanged or in production without source)
-    try {
-      const { recorded, stats } = await codeStatsService.recordStats();
-      if (recorded && stats) {
-        logger.info(`New code stats recorded: ${stats.totalLines.toLocaleString()} lines in ${stats.fileCount} files`);
-      }
-    } catch (error) {
-      logger.error('Failed to record code stats on load:', error);
-    }
   }
 }

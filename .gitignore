@@ -68,6 +68,7 @@ src/modules/*/
 
 # --- Tier 1: Released ---
 !src/modules/admin/
+!src/modules/code-stats/
 !src/modules/help/
 !src/modules/user-tracking/
 !src/modules/message-tracking/
