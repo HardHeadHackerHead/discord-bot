@@ -46,6 +46,7 @@ cmds = [
   "npm prune --omit=dev",
 ]
 
-# Start the bot
+# Start the bot. The heap cap makes V8 collect garbage instead of growing
+# toward the container limit; it only applies at runtime, not to the build.
 [start]
-cmd = "node dist/index.js"
+cmd = "node --max-old-space-size=256 dist/index.js"

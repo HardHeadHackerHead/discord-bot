@@ -3,7 +3,11 @@ import { readdir, readFile, writeFile, mkdir, access } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { Logger } from '../../../shared/utils/logger.js';
-import cv from '@techstark/opencv-js';
+import type CV from '@techstark/opencv-js';
+
+// OpenCV.js costs ~65 MB of RSS once loaded, so it's imported lazily in
+// ensureReady() rather than at module load.
+let cv: typeof CV;
 
 const logger = new Logger('LaserEyes:Service');
 
@@ -99,9 +103,9 @@ export class LaserEyesService {
   private readonly cooldowns = new Map<string, CooldownEntry>();
   private cvReady = false;
   private cvReadyPromise: Promise<void> | null = null;
-  private faceCascade: cv.CascadeClassifier | null = null;
-  private eyeCascade: cv.CascadeClassifier | null = null;
-  private eyeGlassesCascade: cv.CascadeClassifier | null = null;
+  private faceCascade: CV.CascadeClassifier | null = null;
+  private eyeCascade: CV.CascadeClassifier | null = null;
+  private eyeGlassesCascade: CV.CascadeClassifier | null = null;
 
   isAvailable(): boolean {
     return (
@@ -142,6 +146,8 @@ export class LaserEyesService {
       if (!this.isAvailable()) {
         throw new Error(`OpenCV cascades missing from ${CASCADES_DIR}`);
       }
+
+      cv ??= (await import('@techstark/opencv-js')).default;
 
       // Wait for the WASM module to be ready. @techstark/opencv-js fires
       // `onRuntimeInitialized` when ready. We race it with a poll on `cv.Mat`
@@ -292,10 +298,10 @@ export class LaserEyesService {
       // against lighting/angle variation. We stop at the first pass that
       // returns ≥ 2 eyes.
       const tryDetect = (
-        cascade: cv.CascadeClassifier,
+        cascade: CV.CascadeClassifier,
         minNeighbors: number,
         scaleFactor: number
-      ): cv.RectVector => {
+      ): CV.RectVector => {
         const ev = new cv.RectVector();
         cascade.detectMultiScale(
           faceRoi,
@@ -309,7 +315,7 @@ export class LaserEyesService {
         return ev;
       };
 
-      const passes: { cascade: cv.CascadeClassifier; mn: number; sf: number; name: string }[] = [
+      const passes: { cascade: CV.CascadeClassifier; mn: number; sf: number; name: string }[] = [
         { cascade: eyeCascade,        mn: 5, sf: 1.1,  name: 'eye' },
         { cascade: eyeCascade,        mn: 3, sf: 1.1,  name: 'eye' },
         { cascade: eyeGlassesCascade, mn: 5, sf: 1.1,  name: 'eye_glasses' },

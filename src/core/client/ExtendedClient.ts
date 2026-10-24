@@ -4,6 +4,7 @@ import {
   GatewayIntentBits,
   Partials,
   Events,
+  Options,
 } from 'discord.js';
 import { prisma, connectPrisma, disconnectPrisma } from '../database/prisma.js';
 import { testConnection, closePool } from '../database/postgres.js';
@@ -38,6 +39,20 @@ const DEFAULT_CLIENT_OPTIONS: ClientOptions = {
     Partials.GuildMember,
     Partials.User,
   ],
+  // Keep memory bounded: discord.js otherwise caches up to 200 messages per
+  // channel forever. Uncached messages still arrive as partials and modules
+  // fetch them on demand.
+  makeCache: Options.cacheWithLimits({
+    ...Options.DefaultMakeCacheSettings,
+    MessageManager: 50,
+  }),
+  sweepers: {
+    ...Options.DefaultSweeperSettings,
+    messages: {
+      interval: 30 * 60, // seconds
+      lifetime: 60 * 60, // seconds
+    },
+  },
 };
 
 /**
